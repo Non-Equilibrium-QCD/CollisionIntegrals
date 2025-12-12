@@ -57,4 +57,18 @@ docs-pdf-open: docs-pdf
 docs-clean:
 	rm -rf $(SPHINXBLDDIR) docs/xml docs/CollIntegral.pdf
 
-.PHONY: all clean run debug testint docs docs-xml docs-pdf docs-open docs-pdf-open docs-clean
+docs-all: docs docs-pdf
+	@echo "HTML and PDF documentation generated"
+
+docs-watch:
+	@echo "Watching docs/source for changes... (Ctrl+C to stop)"
+	@while true; do \
+		inotifywait -qre modify,create,delete $(SPHINXSRCDIR) 2>/dev/null || \
+		fswatch -1 $(SPHINXSRCDIR) 2>/dev/null || \
+		{ echo "Install inotify-tools or fswatch: sudo pacman -S inotify-tools"; exit 1; }; \
+		echo "Change detected, rebuilding..."; \
+		$(MAKE) docs-all; \
+		echo "Done. Waiting for changes..."; \
+	done
+
+.PHONY: all clean run debug testint docs docs-xml docs-pdf docs-open docs-pdf-open docs-clean docs-all docs-watch

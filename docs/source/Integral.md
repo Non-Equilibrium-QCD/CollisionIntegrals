@@ -5,13 +5,13 @@ The collision integral for $2 \leftrightarrow 2$ scattering processes is given b
 
 ```{math}
 :label: eq-collision-integral
-C[f_1] = \frac{1}{2E_1} \int \frac{d^3p_2}{(2\pi)^3 2E_2} 
+C[f_1] = \frac{1}{2\nu_1}\frac{1}{2E_1} \int \frac{d^3p_2}{(2\pi)^3 2E_2} 
 \frac{d^3p_3}{(2\pi)^3 2E_3} \frac{d^3p_4}{(2\pi)^3 2E_4} 
 (2\pi)^4 \delta^{(4)}(p_1 + p_2 - p_3 - p_4) \, 
 |\mathcal{M}|^2 \, \mathcal{F}[f]\;,
 ```
 
-where the statistical factor is:
+where the statistical factor is computed by {cpp:func}`StatisticalQCD::gg_gg`:
 
 ```{math}
 :label: eq-statistical-factor
@@ -32,7 +32,7 @@ We obtain the reduced collision integral:
 
 ```{math}
 :label: eq-reduced-collision-integral
-C[f_1] = & \int \frac{d^3p_2}{(2\pi)^3}
+C[f_1] = & \frac{1}{2\nu_1}\int \frac{d^3p_2}{(2\pi)^3}
 \frac{d^3 q}{(2\pi)^3}
 \int_{-q}^{q} \frac{d\omega}{2\pi} \,
 \frac{1}{16p_1 p_2 |\vec{p}_1 - \vec{q}| |\vec{p}_2 + \vec{q}|} \\
@@ -70,11 +70,11 @@ Finally, we obtain the expression for the collision integral:
 
 ```{math}
 :label: eq-final-collision-integral
-C[f_1] = & \frac{1}{{(2\pi)}^6}
-\int dp_2 \int_{0}^{p_1+p_2} dq
+C[f_1] = & \frac{1}{2\nu_1}\frac{1}{{(2\pi)}^6}
+\int_0^\infty dp_2 \int_{0}^{p_1+p_2} dq
 d\cos\theta_{2q} d\phi_{2q}
 d\cos\theta_{1q} d\phi_{1q}
-\int_{\min(q, 2p_1 - q)}^{\max(-q, q - 2p_2)} \frac{d\omega}{2\pi} \,
+\int^{\min(q, 2p_1 - q)}_{\max(-q, q - 2p_2)} \frac{d\omega}{2\pi} \,
 \frac{p_2^2 q^2}{16p_1^2 p_2^2 q^2} \\
 & \times (2\pi) \delta\left(\cos\theta_{1q} - \left(\frac{\omega}{q} - \frac{\omega^2 - q^2}{2 p_1 q}\right)\right) \,
 (2\pi) \delta\left(\cos\theta_{2q} - \left(\frac{\omega}{q} + \frac{\omega^2 - q^2}{2 p_2 q}\right)\right) \,
@@ -117,4 +117,23 @@ Leading to the expression:
  \cos\theta_{2q}\vec{e}^{\, 1}_{q}
  +\sin\theta_{2q} \left(\cos\phi_{2q}\vec{e}^{\, 2}_{q} + \sin\phi_{2q}\vec{e}^{\, 3}_{q}\right)
   \right]\;.
+```
+
+
+## Integration and Jacobians
+We write the integral in {eq}`eq-final-collision-integral` as:
+```{math}
+:label:
+\int_0^\infty dp_2 =& \int_0^1 d y_1~ (p_2^2+1) 
+\text{ with } p_2 = \frac{y_1}{1-y_1}\;, \\
+\int_0^{p_1+p_2} dq =& \int_0^1 d y_1~ (p_1+p_2)
+\text{ with } q = (p_1+p_2) y_2\;, \\
+\int_{0}^{2\pi} d\phi_{1q} =& \int_0^1 d y_3~ (2\pi)
+\text{ with } \phi_{1q} = 2\pi y_3\;, \\
+\int_{0}^{2\pi} d\phi_{2q} =& \int_0^1 d y_4~ (2\pi)
+\text{ with } \phi_{2q} = 2\pi y_4\;, \\
+\int_{\max(-q, q - 2p_2)}^{\min(q, 2p_1 - q)} d\omega =& \int_0^1 d y_5~ 
+(\min(q, 2p_1 - q) - \max(-q, q - 2p_2)) \\
+& \text{ with } \omega = \max(-q, q - 2p_2) + y_5 
+(\min(q, 2p_1 - q) - \max(-q, q - 2p_2))\;.
 ```
