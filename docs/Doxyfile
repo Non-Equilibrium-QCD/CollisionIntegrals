@@ -1,0 +1,29 @@
+# Minimal Doxyfile for Breathe/Sphinx integration
+# Only generates XML, no HTML
+
+PROJECT_NAME           = "CollIntegral"
+PROJECT_BRIEF          = "QCD Collision Integral Computation"
+
+# Input
+INPUT                  = ../src/
+RECURSIVE              = YES
+FILE_PATTERNS          = *.cpp *.hpp *.h
+
+# Output - XML only for Breathe
+GENERATE_HTML          = NO
+GENERATE_LATEX         = NO
+GENERATE_XML           = YES
+XML_OUTPUT             = xml
+
+# Extraction
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = NO
+EXTRACT_STATIC         = YES
+
+# Preprocessing
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+
+# Quiet
+QUIET                  = YES
+WARNINGS               = YES

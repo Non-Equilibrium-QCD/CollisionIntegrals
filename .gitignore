@@ -1,2 +1,8 @@
 collint
+testint
 .gdb_history
+
+# Generated docs (Sphinx + Doxygen)
+docs/build/
+docs/xml/
+docs/*.pdf

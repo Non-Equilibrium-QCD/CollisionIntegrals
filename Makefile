@@ -30,23 +30,31 @@ run: $(TARGET)
 debug: CXXFLAGS += -g -O0 -DDEBUG
 debug: clean all
 
-# Documentation
-docs:
-	doxygen Doxyfile
-	@echo "Documentation generated at docs/html/index.html"
+# Documentation (Sphinx + Breathe + Doxygen)
+SPHINXBUILD   = sphinx-build
+SPHINXSRCDIR  = docs/source
+SPHINXBLDDIR  = docs/build
 
-docs-pdf: docs
-	$(MAKE) -C docs/latex || true
-	@cp docs/latex/refman.pdf docs/CollIntegral.pdf 2>/dev/null || { echo "PDF generation failed. Install texlive: sudo apt install texlive-latex-extra"; exit 1; }
+docs-xml:
+	cd docs && doxygen Doxyfile
+
+docs: docs-xml
+	$(SPHINXBUILD) -b html $(SPHINXSRCDIR) $(SPHINXBLDDIR)/html
+	@echo "Documentation generated at $(SPHINXBLDDIR)/html/index.html"
+
+docs-pdf: docs-xml
+	$(SPHINXBUILD) -b latex $(SPHINXSRCDIR) $(SPHINXBLDDIR)/latex
+	$(MAKE) -C $(SPHINXBLDDIR)/latex all-pdf || true
+	@cp $(SPHINXBLDDIR)/latex/CollIntegral.pdf docs/ 2>/dev/null || { echo "PDF generation failed. Install texlive."; exit 1; }
 	@echo "PDF generated at docs/CollIntegral.pdf"
 
 docs-open: docs
-	xdg-open docs/html/index.html 2>/dev/null || open docs/html/index.html
+	xdg-open $(SPHINXBLDDIR)/html/index.html 2>/dev/null || open $(SPHINXBLDDIR)/html/index.html
 
 docs-pdf-open: docs-pdf
 	xdg-open docs/CollIntegral.pdf 2>/dev/null || open docs/CollIntegral.pdf
 
 docs-clean:
-	rm -rf docs/html docs/latex docs/xml docs/CollIntegral.pdf
+	rm -rf $(SPHINXBLDDIR) docs/xml docs/CollIntegral.pdf
 
-.PHONY: all clean run debug testint docs docs-pdf docs-open docs-pdf-open docs-clean
+.PHONY: all clean run debug testint docs docs-xml docs-pdf docs-open docs-pdf-open docs-clean
