@@ -1,6 +1,6 @@
 # Compiler and flags
 CXX      := g++
-CXXFLAGS := -std=c++17 -Wall -Wextra -fopenmp -g
+CXXFLAGS := -std=c++17 -Wall -Wextra -fopenmp -g -march=native
 LDFLAGS  := -lgsl -lgslcblas -lm -fopenmp -lfmt -lcuba
 
 # Directories
