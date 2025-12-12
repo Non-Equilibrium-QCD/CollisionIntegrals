@@ -1,0 +1,75 @@
+# Doxyfile for CollIntegral
+
+# Project info
+PROJECT_NAME           = "CollIntegral"
+PROJECT_BRIEF          = "QCD Collision Integral Computation"
+OUTPUT_DIRECTORY       = docs
+
+# Input
+INPUT                  = src/ docs/pages/
+RECURSIVE              = YES
+FILE_PATTERNS          = *.cpp *.hpp *.h *.md *.dox
+
+# Use mainpage.md as the landing page
+USE_MDFILE_AS_MAINPAGE = docs/pages/mainpage.md
+
+# Extraction
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = YES
+EXTRACT_STATIC         = YES
+
+# Output formats
+GENERATE_HTML          = YES
+GENERATE_LATEX         = YES
+GENERATE_XML           = NO
+
+# Markdown support (for input)
+MARKDOWN_SUPPORT       = YES
+
+# LaTeX options
+LATEX_OUTPUT           = latex
+PDF_HYPERLINKS         = YES
+USE_PDFLATEX           = YES
+LATEX_BATCHMODE        = YES
+EXTRA_PACKAGES         = amsmath
+
+# HTML options
+HTML_OUTPUT            = html
+HTML_COLORSTYLE        = LIGHT
+
+# Doxygen Awesome theme
+HTML_EXTRA_STYLESHEET  = docs/doxygen-awesome-css/doxygen-awesome.css \
+                         docs/doxygen-awesome-css/doxygen-awesome-sidebar-only.css
+HTML_EXTRA_FILES       = docs/doxygen-awesome-css/doxygen-awesome-darkmode-toggle.js \
+                         docs/doxygen-awesome-css/doxygen-awesome-fragment-copy-button.js
+HTML_HEADER            = 
+GENERATE_TREEVIEW      = YES
+DISABLE_INDEX          = NO
+FULL_SIDEBAR           = NO
+HTML_COLORSTYLE_HUE    = 209
+HTML_COLORSTYLE_SAT    = 255
+HTML_COLORSTYLE_GAMMA  = 113
+
+# Source browsing
+SOURCE_BROWSER         = YES
+INLINE_SOURCES         = NO
+
+# Graphs (requires graphviz)
+HAVE_DOT               = NO
+CALL_GRAPH             = NO
+CALLER_GRAPH           = NO
+
+# Warnings
+WARN_IF_UNDOCUMENTED   = YES
+WARN_NO_PARAMDOC       = YES
+
+# LaTeX equations with MathJax
+USE_MATHJAX            = YES
+MATHJAX_VERSION        = MathJax_3
+MATHJAX_EXTENSIONS     = ams
+MATHJAX_FORMAT         = HTML-CSS
+MATHJAX_CODEFILE       = docs/mathjax-config.js
+
+# Preprocessing
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
