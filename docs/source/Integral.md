@@ -11,7 +11,7 @@ C[f_1] = \frac{1}{2\nu_1}\frac{1}{2E_1} \int \frac{d^3p_2}{(2\pi)^3 2E_2}
 |\mathcal{M}|^2 \, \mathcal{F}[f]\;,
 ```
 
-where the statistical factor is computed by {cpp:func}`StatisticalQCD::gg_gg`:
+where the statistical factor is computed according to the process traits (see {ref}`process-traits`):
 
 ```{math}
 :label: eq-statistical-factor

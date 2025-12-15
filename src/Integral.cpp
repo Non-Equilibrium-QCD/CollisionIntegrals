@@ -56,7 +56,8 @@ inline double CollisionIntegral(double *x, const GSLARGS& args) {
 
     // SAMPLE p2 //
     double p2 = x[0] / (1.0 - x[0]) ; // maps [0,1] to [0,inf)
-    double Jacobian = (1.0 + p2 * p2);
+    // x[0] = p2 / (1.0 + p2);
+    double Jacobian = (1.0 + p2) * (1.0 + p2);
 
     // SAMPLE q //
     double qMin = 0.0; double qMax = (p1 + p2);
@@ -78,9 +79,11 @@ inline double CollisionIntegral(double *x, const GSLARGS& args) {
     Jacobian *= (2.0 * M_PI);
 
     // GET Cos1Q AND Cos2Q FROM ENERGY CONSERVATION CONSTRAINTS //
-    double Cos1Q = -((p1 - w) * (p1 - w) - p1 * p1 - q * q) / (2.0 * p1 * q);
+    // double Cos1Q = -((p1 - w) * (p1 - w) - p1 * p1 - q * q) / (2.0 * p1 * q);
+    double Cos1Q = w / q - (w * w - q * q) / (2.0 * p1 * q);
     double Sin1Q = sqrt(1.0 - Cos1Q * Cos1Q);
-    double Cos2Q = +((p2 + w) * (p2 + w) - p2 * p2 - q * q) / (2.0 * p2 * q);
+    // double Cos2Q = +((p2 + w) * (p2 + w) - p2 * p2 - q * q) / (2.0 * p2 * q);
+    double Cos2Q = w / q + (w * w - q * q) / (2.0 * p2 * q);
     double Sin2Q = sqrt(1.0 - Cos2Q * Cos2Q);
 
     // SET q VECTOR //
@@ -155,6 +158,8 @@ inline double CollisionIntegral(double *x, const GSLARGS& args) {
 
     double s1 = Traits::stat(f1, f2, f3, f4);
     double M1 = Traits::matrix(s, t, u, q13, q23, mDSqr, mQSqr);
+    double s2 = Traits::stat(f1, f2, f4, f3);
+    double M2 = Traits::matrix(s, u, t, q23, q13, mDSqr, mQSqr);
 
     double j  = Jacobian / (16.0 * p1 * p1);
     constexpr double c  = 1.0 / power_recursive<double, 6>(2.0 * M_PI)
@@ -172,7 +177,8 @@ inline double CollisionIntegral(double *x, const GSLARGS& args) {
         return 0.0;
     }
 
-    return j * c * s1 * M1;
+    // return j * c * s1 * M1;
+    return 0.5 * j * c * (s1 * M1 + s2 * M2);
 }
 
 }
@@ -185,10 +191,10 @@ template<typename ProcessTag>
 void Compute(double (*Integrand)(double *, const GSLARGS &)) {
     using Traits = ProcessTraits<ProcessTag>;
 
-    size_t Np = 64;
+    size_t Np = 128;
     size_t Ncos = 16;
-    double pMin = 1e-1;
-    double pMax = 4.0;
+    double pMin = 1e-2;
+    double pMax = 16.0;
     #pragma omp parallel for ordered
 
     for (size_t j = 0; j < Ncos; j++) {
@@ -201,8 +207,8 @@ void Compute(double (*Integrand)(double *, const GSLARGS &)) {
         size_t tID = omp_get_thread_num();
 
         for (size_t i = 0; i < Np; i++) {
-            // args.p1 = pMin * std::exp(std::log(pMax / pMin) * i / (Np - 1));
-            args.p1 = pMin + (pMax - pMin) * i / (Np - 1);
+            args.p1 = pMin * std::exp(std::log(pMax / pMin) * i / (Np - 1));
+            // args.p1 = pMin + (pMax - pMin) * i / (Np - 1);
 
             double result, error;
             vegasIntegrators[tID].integrate(args, 10000, &result, &error);

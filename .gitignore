@@ -6,3 +6,4 @@ testint
 docs/build/
 docs/xml/
 docs/*.pdf
+build

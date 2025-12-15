@@ -60,9 +60,10 @@ inline double FFFF(double f1, double f2, double f3, double f4) {
 
 namespace MatrixElement {
 
-// Screening parameters
-static constexpr double xi0g = 1.0; // std::exp(5.0 / 6.0) / (2.0 * M_SQRT2)
-static constexpr double xi0q = 1.0; // std::exp(1.0) / M_SQRT2
+// SCREENING PARAMETER //
+static const double xi0g = std::exp(5.0 / 6.0) / (2.0 * M_SQRT2);
+static const double xi0q = std::exp(1.0) / M_SQRT2;
+
 
 /// gg -> gg matrix element squared
 inline double gg_gg(double s, double t, double u, 
@@ -102,11 +103,6 @@ inline double qq_qq(double s, double t, double u,
 // Process Traits
 // ============================================================================
 
-/// Function pointer types
-using DistFunc = double(*)(double, double, double);
-using StatFunc = double(*)(double, double, double, double);
-using MatrixFunc = double(*)(double, double, double, double, double, double, double);
-
 /**
  * @brief Process trait template.
  * 
@@ -137,33 +133,33 @@ struct qq_to_qq {};
 
 template<>
 struct ProcessTraits<gg_to_gg> {
-    static constexpr DistFunc dist1 = Distribution::gluon;
-    static constexpr DistFunc dist2 = Distribution::gluon;
-    static constexpr DistFunc dist3 = Distribution::gluon;
-    static constexpr DistFunc dist4 = Distribution::gluon;
-    static constexpr StatFunc stat = StatisticalFactor::BBBB;
-    static constexpr MatrixFunc matrix = MatrixElement::gg_gg;
+    static constexpr auto dist1 = Distribution::gluon;
+    static constexpr auto dist2 = Distribution::gluon;
+    static constexpr auto dist3 = Distribution::gluon;
+    static constexpr auto dist4 = Distribution::gluon;
+    static constexpr auto stat = StatisticalFactor::BBBB;
+    static constexpr auto matrix = MatrixElement::gg_gg;
     static constexpr double nuA = nuG;
 };
 
 template<>
 struct ProcessTraits<qg_to_qg> {
-    static constexpr DistFunc dist1 = Distribution::quark;
-    static constexpr DistFunc dist2 = Distribution::gluon;
-    static constexpr DistFunc dist3 = Distribution::quark;
-    static constexpr DistFunc dist4 = Distribution::gluon;
-    static constexpr StatFunc stat = StatisticalFactor::FBFB;
-    static constexpr MatrixFunc matrix = MatrixElement::qg_qg;
+    static constexpr auto dist1 = Distribution::quark;
+    static constexpr auto dist2 = Distribution::gluon;
+    static constexpr auto dist3 = Distribution::quark;
+    static constexpr auto dist4 = Distribution::gluon;
+    static constexpr auto stat = StatisticalFactor::FBFB;
+    static constexpr auto matrix = MatrixElement::qg_qg;
     static constexpr double nuA = nuQ;
 };
 
 template<>
 struct ProcessTraits<qq_to_qq> {
-    static constexpr DistFunc dist1 = Distribution::quark;
-    static constexpr DistFunc dist2 = Distribution::quark;
-    static constexpr DistFunc dist3 = Distribution::quark;
-    static constexpr DistFunc dist4 = Distribution::quark;
-    static constexpr StatFunc stat = StatisticalFactor::FFFF;
-    static constexpr MatrixFunc matrix = MatrixElement::qq_qq;
+    static constexpr auto dist1 = Distribution::quark;
+    static constexpr auto dist2 = Distribution::quark;
+    static constexpr auto dist3 = Distribution::quark;
+    static constexpr auto dist4 = Distribution::quark;
+    static constexpr auto stat = StatisticalFactor::FFFF;
+    static constexpr auto matrix = MatrixElement::qq_qq;
     static constexpr double nuA = nuQ;
 };
