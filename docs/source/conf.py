@@ -58,10 +58,17 @@ html_theme_options = {
 
 # -- Options for LaTeX/PDF output --------------------------------------------
 
+latex_engine = 'lualatex'
+
 latex_elements = {
     'preamble': r'''
 \usepackage{amsmath}
 \usepackage{amssymb}
+''',
+    # Use Unicode fonts with LuaLaTeX
+    'fontpkg': r'''
+\usepackage{fontspec}
+\setmonofont{DejaVu Sans Mono}[Scale=0.9]
 ''',
 }
 
