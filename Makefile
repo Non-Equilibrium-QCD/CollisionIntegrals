@@ -5,12 +5,14 @@ LDFLAGS  := -lgsl -lgslcblas -lm -fopenmp -lfmt -lcuba
 
 # Directories
 SRC_DIR := src
+TEST_DIR := test
 
 # Output
 TARGET := collint
 
 # All source files
 DEPS := $(wildcard $(SRC_DIR)/*.cpp) $(wildcard $(SRC_DIR)/**/*.cpp)
+TEST_DEPS := $(wildcard $(TEST_DIR)/*.cpp) $(DEPS)
 
 # Default target
 all: $(TARGET)
@@ -21,8 +23,11 @@ $(TARGET): $(DEPS)
 clean:
 	rm -f $(TARGET) testint
 
-testint: $(DEPS)
-	$(CXX) $(CXXFLAGS) -o $@ $(SRC_DIR)/testIntegral.cpp $(LDFLAGS)
+testint: $(TEST_DEPS)
+	$(CXX) $(CXXFLAGS) -o $@ $(TEST_DIR)/testIntegral.cpp $(LDFLAGS)
+
+test: testint
+	./testint
 
 run: $(TARGET)
 	./$(TARGET)
@@ -71,4 +76,4 @@ docs-watch:
 		echo "Done. Waiting for changes..."; \
 	done
 
-.PHONY: all clean run debug testint docs docs-xml docs-pdf docs-open docs-pdf-open docs-clean docs-all docs-watch
+.PHONY: all clean run debug testint test docs docs-xml docs-pdf docs-open docs-pdf-open docs-clean docs-all docs-watch
