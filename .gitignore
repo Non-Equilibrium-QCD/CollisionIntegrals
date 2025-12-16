@@ -7,3 +7,6 @@ docs/build/
 docs/xml/
 docs/*.pdf
 build
+
+examples/*
+!examples/*.*

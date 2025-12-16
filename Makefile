@@ -21,13 +21,18 @@ $(TARGET): $(DEPS)
 	$(CXX) $(CXXFLAGS) -o $@ $(SRC_DIR)/main.cpp $(LDFLAGS)
 
 clean:
-	rm -f $(TARGET) testint
+	rm -f $(TARGET) testint testsimple
 
 testint: $(TEST_DEPS)
 	$(CXX) $(CXXFLAGS) -o $@ $(TEST_DIR)/testIntegral.cpp $(LDFLAGS)
 
-test: testint
+testsimple: $(TEST_DEPS)
+	$(CXX) $(CXXFLAGS) -o $@ $(TEST_DIR)/testSimpleIntegral.cpp $(LDFLAGS)
+	./testsimple
+
+test: testint testsimple
 	./testint
+	./testsimple
 
 run: $(TARGET)
 	./$(TARGET)
@@ -76,4 +81,34 @@ docs-watch:
 		echo "Done. Waiting for changes..."; \
 	done
 
-.PHONY: all clean run debug testint test docs docs-xml docs-pdf docs-open docs-pdf-open docs-clean docs-all docs-watch
+# Examples: make example NAME=YM
+EXAMPLES_DIR := examples
+AVAILABLE_EXAMPLES := $(basename $(notdir $(wildcard $(EXAMPLES_DIR)/*.cpp)))
+
+example-help:
+	@echo "Usage: make example NAME=<name>"
+	@echo "       make example-run NAME=<name>"
+	@echo ""
+	@echo "Available examples:"
+	@for ex in $(AVAILABLE_EXAMPLES); do echo "  - $$ex"; done
+	@echo ""
+	@echo "Example: make example NAME=YM"
+
+example:
+ifndef NAME
+	@$(MAKE) --no-print-directory example-help
+	@exit 1
+else ifeq ($(wildcard $(EXAMPLES_DIR)/$(NAME).cpp),)
+	@echo "Error: $(EXAMPLES_DIR)/$(NAME).cpp not found"
+	@echo ""
+	@$(MAKE) --no-print-directory example-help
+	@exit 1
+else
+	$(CXX) $(CXXFLAGS) -o $(EXAMPLES_DIR)/$(NAME) $(EXAMPLES_DIR)/$(NAME).cpp $(LDFLAGS)
+	@echo "Built $(EXAMPLES_DIR)/$(NAME)"
+endif
+
+example-run: example
+	./$(EXAMPLES_DIR)/$(NAME)
+
+.PHONY: all clean run debug testint testsimple test example example-help example-run docs docs-xml docs-pdf docs-open docs-pdf-open docs-clean docs-all docs-watch

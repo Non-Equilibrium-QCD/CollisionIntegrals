@@ -4,6 +4,7 @@
 
 - C++17 compiler (GCC 7+, Clang 5+)
 - GSL (GNU Scientific Library)
+- Cuba library
 - OpenMP
 - fmt library
 
@@ -11,10 +12,49 @@
 
 ```bash
 make          # build main executable
-make testint  # build test executable
-make docs     # generate documentation
+make test     # run all tests
+make docs     # generate HTML documentation
 make docs-pdf # generate PDF documentation
 ```
+
+## Examples
+
+Example programs are located in the `examples/` directory. Build and run them with:
+
+```bash
+make example NAME=YM       # build examples/YM.cpp
+make example-run NAME=YM   # build and run
+```
+
+Running `make example` without `NAME=` shows available examples:
+
+```
+Usage: make example NAME=<name>
+       make example-run NAME=<name>
+
+Available examples:
+  - YM
+
+Example: make example NAME=YM
+```
+
+### Creating Your Own Example
+
+Create a new `.cpp` file in `examples/`:
+
+```cpp
+// examples/MyExample.cpp
+#include "../src/Integral.cpp"
+
+int main() {
+    IntegrateQCD::Setup();
+    auto integrand = CollisionIntegralQCD::CollisionIntegral<gg_to_gg>;
+    IntegrateQCD::Compute<gg_to_gg>(integrand);
+    return 0;
+}
+```
+
+Then build with `make example NAME=MyExample`.
 
 ## Quick Example
 

@@ -8,6 +8,7 @@
 #include "GSLVEGAS.cpp"
 #include <omp.h>
 #include <fmt/core.h>
+#include <fmt/os.h>
 
 
 namespace CollisionIntegralQCD {
@@ -56,6 +57,9 @@ inline double CollisionIntegral(double *x, const GSLARGS& args) {
 
     // SAMPLE p2 //
     double p2 = x[0] / (1.0 - x[0]) ; // maps [0,1] to [0,inf)
+    if (x[0] == 1.0) {
+        return 0.0;
+    }
     // x[0] = p2 / (1.0 + p2);
     double Jacobian = (1.0 + p2) * (1.0 + p2);
 
@@ -158,12 +162,12 @@ inline double CollisionIntegral(double *x, const GSLARGS& args) {
 
     double s1 = Traits::stat(f1, f2, f3, f4);
     double M1 = Traits::matrix(s, t, u, q13, q23, mDSqr, mQSqr);
-    double s2 = Traits::stat(f1, f2, f4, f3);
-    double M2 = Traits::matrix(s, u, t, q23, q13, mDSqr, mQSqr);
+    // double s2 = Traits::stat(f1, f2, f4, f3);
+    // double M2 = Traits::matrix(s, u, t, q23, q13, mDSqr, mQSqr);
 
     double j  = Jacobian / (16.0 * p1 * p1);
-    constexpr double c  = 1.0 / power_recursive<double, 6>(2.0 * M_PI)
-                          / (2.0 * Traits::nuA);
+    constexpr double TwoPi = power_recursive<double, 5>(2.0 * M_PI);
+    constexpr double c  = 1.0 / (2.0 * Traits::nuA * TwoPi);
 
     if (std::abs(u) < 1e-12 || std::abs(t) < 1e-12) {
         return 0.0;
@@ -177,8 +181,8 @@ inline double CollisionIntegral(double *x, const GSLARGS& args) {
         return 0.0;
     }
 
-    // return j * c * s1 * M1;
-    return 0.5 * j * c * (s1 * M1 + s2 * M2);
+    return j * c * s1 * M1;
+    // return 0.5 * j * c * (s1 * M1 + s2 * M2);
 }
 
 }
@@ -188,13 +192,18 @@ namespace IntegrateQCD {
 std::vector<GSLVEGAS> vegasIntegrators;
 
 template<typename ProcessTag>
-void Compute(double (*Integrand)(double *, const GSLARGS &)) {
+void Compute(double (*Integrand)(double *, const GSLARGS &), std::string OutputFile) {
     using Traits = ProcessTraits<ProcessTag>;
 
     size_t Np = 128;
     size_t Ncos = 16;
     double pMin = 1e-2;
     double pMax = 16.0;
+
+    // Try to open output file
+    auto file = fmt::output_file(OutputFile);
+    file.print(
+        "# p1  cosTheta1  f1(p1,cosTheta1)  C[f1](p1,cosTheta1)  Error \n");
     #pragma omp parallel for ordered
 
     for (size_t j = 0; j < Ncos; j++) {
@@ -228,12 +237,12 @@ void Compute(double (*Integrand)(double *, const GSLARGS &)) {
         {
             for (size_t i = 0; i < Np; i++) {
                 // Use dist1 from traits for output (particle 1's distribution)
-                fmt::println("{} {} {} {} {}", pValues[i], args.cosTheta1,
+                file.print("{} {} {} {} {} \n", pValues[i], args.cosTheta1,
                              Traits::dist1(pValues[i], args.cosTheta1, 0.0),
                              Results[i], Errors[i]);
             }
 
-            fmt::println("");
+            file.print("\n");
         }
     }
 

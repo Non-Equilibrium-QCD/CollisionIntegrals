@@ -26,6 +26,7 @@ suppress_warnings = ['duplicate_declaration.cpp']
 myst_enable_extensions = [
     "amsmath",
     "dollarmath",
+    "colon_fence",
 ]
 
 # Allow both .md and .rst

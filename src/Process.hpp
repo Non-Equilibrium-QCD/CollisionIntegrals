@@ -27,7 +27,7 @@ inline double fermi(double p, double T) {
 
 /// Gluon distribution (non-equilibrium)
 inline double gluon(double p, double cosTheta, double phi) {
-    return std::exp(-p * p) * std::exp(-cosTheta * cosTheta);
+    return std::exp(-p * p);// * std::exp(-cosTheta * cosTheta);
 }
 
 /// Quark distribution (non-equilibrium)

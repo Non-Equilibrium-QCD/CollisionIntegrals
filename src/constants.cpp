@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <cstddef>
+#include <string>
 constexpr double dA = 8.0;
 constexpr double dF = 3.0;
 constexpr double CA = 3.0;
@@ -27,4 +28,13 @@ constexpr T power_recursive(T base) {
         result *= base;
     }
     return result;
+}
+
+
+std::string ReadFileName(int argc, char *argv[], const std::string &defaultName) {
+    if (argc >= 2) {
+        return std::string(argv[1]);
+    } else {
+        return defaultName;
+    }
 }
