@@ -12,11 +12,15 @@
 #include <fmt/color.h>
 
 
-namespace CollisionIntegralQCD {
 
+namespace CollisionIntegral {
+struct GSLARGS {
+    double p1, cosTheta1, phi1;
+    double (*fct)(double *, const GSLARGS &);
+};
 
 /**
- * @brief Computes the collision integral for 2->2 QCD processes using Monte Carlo integration.
+ * @brief Computes the collision integral for 2->2 processes using Monte Carlo integration.
  * @tparam ProcessTag Tag type identifying the process (e.g., gg_to_gg, qg_to_qg).
  *         ProcessTraits<ProcessTag> must define:
  *         - dist1, dist2, dist3, dist4: distribution functions
@@ -190,14 +194,14 @@ inline double CollisionIntegral(double *x, const GSLARGS& args) {
 
 }
 
-namespace IntegrateQCD {
+namespace Integrate {
 
 std::vector<GSLVEGAS> vegasIntegrators;
 
 template<typename ProcessTag>
 void Compute(std::string OutputFile) {
     using Traits = ProcessTraits<ProcessTag>;
-    auto Integrand = CollisionIntegralQCD::CollisionIntegral<gg_to_gg>;
+    auto Integrand = CollisionIntegral::CollisionIntegral<gg_to_gg>;
 
     size_t Np = 128;
     size_t Ncos = 16;
@@ -220,7 +224,7 @@ void Compute(std::string OutputFile) {
 
     for (size_t i = 0; i < Np; i++) {
         for (size_t j = 0; j < Ncos; j++) {
-            GSLARGS args;
+            CollisionIntegral::GSLARGS args;
             args.p1 = pValues[i];
             args.cosTheta1 = cosThetaValues[j];
             args.phi1 = 0.0;
@@ -272,12 +276,4 @@ void Setup() {
         vegasIntegrators.push_back(GSLVEGAS(5));
     }
 }
-
 }
-
-
-// int main (int argc, const char *argv[]) {
-//     IntegrateQCD::Setup();
-//     IntegrateQCD::Compute();
-//     return 0;
-// }

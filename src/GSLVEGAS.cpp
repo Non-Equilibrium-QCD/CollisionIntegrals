@@ -5,16 +5,12 @@
 #include <gsl/gsl_monte_vegas.h>
 #include <vector>
 
-struct GSLARGS {
-    double p1, cosTheta1, phi1;
-    double (*fct)(double *, const GSLARGS &);
-};
-
 namespace private_GSLVEGAS {
 
+template<typename ARGTYPE>
 double Integrand(double *x, size_t dim, void *params) {
     (void)dim;  // Unused parameter
-    GSLARGS args = *static_cast<GSLARGS *>(params);
+    ARGTYPE args = *static_cast<ARGTYPE *>(params);
     return args.fct(x, args);
 }
 
@@ -55,14 +51,15 @@ public:
         return *this;
     }
 
-    void integrate(const GSLARGS& args,
+    template<typename ARGTYPE>
+    void integrate(const ARGTYPE& args,
                    size_t calls, double *result, double *error) {
         std::vector<double> xl(dimension, 0.0);
         std::vector<double> xu(dimension, 1.0);
         gsl_monte_function f;
-        f.f = &private_GSLVEGAS::Integrand;
+        f.f = &private_GSLVEGAS::Integrand<ARGTYPE>;
         f.dim = dimension;
-        f.params = const_cast<GSLARGS *>(&args);
+        f.params = const_cast<ARGTYPE *>(&args);
         auto vs = gsl_monte_vegas_alloc(dimension);
         gsl_monte_vegas_integrate(&f, xl.data(), xu.data(), dimension, calls, rng,
                                   vs, result, error);
