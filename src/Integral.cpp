@@ -201,7 +201,7 @@ std::vector<GSLVEGAS> vegasIntegrators;
 template<typename ProcessTag>
 void Compute(std::string OutputFile) {
     using Traits = ProcessTraits<ProcessTag>;
-    auto Integrand = CollisionIntegral::CollisionIntegral<gg_to_gg>;
+    auto Integrand = CollisionIntegral::CollisionIntegral<ProcessTag>;
 
     size_t Np = 128;
     size_t Ncos = 16;

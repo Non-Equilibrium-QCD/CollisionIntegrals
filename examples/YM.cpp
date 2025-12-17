@@ -54,7 +54,7 @@ struct ProcessTraits<QCDgg_gg> {
 };
 
 int main() {
-    IntegrateQCD::Setup();
-    IntegrateQCD::Compute<QCDgg_gg>("OUTPUT/QCDgg_gg.dat");
+    Integrate::Setup();
+    Integrate::Compute<QCDgg_gg>("OUTPUT/QCDgg_gg.dat");
     return EXIT_SUCCESS;
 }

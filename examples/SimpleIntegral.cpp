@@ -6,7 +6,8 @@ namespace SimpleIntegral {
 // Simple statistical factor: just f2
 inline double statSimple(double f1, double f2, double f3, double f4) {
     (void)f1; (void)f3; (void)f4;  // unused
-    return f1 * f2 - f3 * f4;
+    // return f1 * f2 - f3 * f4;
+    return f2;
 }
 
 // Constant matrix element
@@ -49,10 +50,10 @@ struct ProcessTraits<simple_test> {
 int main(int argc, char *argv[]) {
 
     fmt::println(stderr, "Using ORIGINAL implementation (Integral.cpp)");
-    IntegrateQCD::Setup();
-    auto integrand = CollisionIntegralQCD::CollisionIntegral<simple_test>;
-    IntegrateQCD::Compute<simple_test>(ReadFileName(argc, argv,
-                                       "OUTPUT/simple.txt"));
+    Integrate::Setup();
+    auto integrand = CollisionIntegral::CollisionIntegral<simple_test>;
+    Integrate::Compute<simple_test>(ReadFileName(argc, argv,
+                                       "OUTPUT/simple.dat"));
 
     return 0;
 }
