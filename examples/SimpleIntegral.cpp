@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
     fmt::println(stderr, "Using ORIGINAL implementation (Integral.cpp)");
     IntegrateQCD::Setup();
     auto integrand = CollisionIntegralQCD::CollisionIntegral<simple_test>;
-    IntegrateQCD::Compute<simple_test>(integrand, ReadFileName(argc, argv,
+    IntegrateQCD::Compute<simple_test>(ReadFileName(argc, argv,
                                        "OUTPUT/simple.txt"));
 
     return 0;

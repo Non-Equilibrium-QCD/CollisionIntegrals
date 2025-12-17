@@ -17,7 +17,7 @@ The statistical factor $\mathcal{F}[f]$ for this case is given by:
 ```
 
 The integral over $\omega$ can be performed analytically using SageMath as follows:
-:::{literalinclude} ../../notebooks/scalar_integrals.sage
+:::{literalinclude} ../../notebooks/SimpleIntegral.sage
 :start-after: "# START"
 :end-before: "# END"
 :language: python

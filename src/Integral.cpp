@@ -195,9 +195,9 @@ namespace IntegrateQCD {
 std::vector<GSLVEGAS> vegasIntegrators;
 
 template<typename ProcessTag>
-void Compute(double (*Integrand)(double *, const GSLARGS &),
-             std::string OutputFile) {
+void Compute(std::string OutputFile) {
     using Traits = ProcessTraits<ProcessTag>;
+    auto Integrand = CollisionIntegralQCD::CollisionIntegral<gg_to_gg>;
 
     size_t Np = 128;
     size_t Ncos = 16;

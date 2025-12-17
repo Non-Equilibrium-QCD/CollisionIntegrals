@@ -1,5 +1,5 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-#include "../src/third_party/doctest.h"
+#include "../third_party/doctest/doctest.h"
 
 #include "../src/constants.cpp"
 #include "../src/Process.hpp"

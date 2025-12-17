@@ -1,7 +1,12 @@
 # Compiler and flags
 CXX      := g++
 CXXFLAGS := -std=c++17 -Wall -Wextra -fopenmp -g -march=native
-LDFLAGS  := -lgsl -lgslcblas -lm -fopenmp -lfmt -lcuba
+CXXFLAGS += -O3 -funroll-loops -flto
+CXXFLAGS += -I./third_party/fmt/include/ -L./third_party/fmt/build -lfmt
+LDFLAGS  := -lgsl -lgslcblas -lm -lfmt -fopenmp -lcuba
+
+BOLDGREEN := \033[1;32m
+RESET := \033[0m
 
 # Directories
 SRC_DIR := src
@@ -17,16 +22,16 @@ TEST_DEPS := $(wildcard $(TEST_DIR)/*.cpp) $(DEPS)
 # Default target
 all: $(TARGET)
 
-$(TARGET): $(DEPS)
+$(TARGET): $(DEPS) libfmt
 	$(CXX) $(CXXFLAGS) -o $@ $(SRC_DIR)/main.cpp $(LDFLAGS)
 
 clean:
 	rm -f $(TARGET) testint testsimple
 
-testint: $(TEST_DEPS)
+testint: $(TEST_DEPS) libfmt
 	$(CXX) $(CXXFLAGS) -o $@ $(TEST_DIR)/testIntegral.cpp $(LDFLAGS)
 
-testsimple: $(TEST_DEPS)
+testsimple: $(TEST_DEPS) libfmt
 	$(CXX) $(CXXFLAGS) -o $@ $(TEST_DIR)/testSimpleIntegral.cpp $(LDFLAGS)
 	./testsimple
 
@@ -104,11 +109,19 @@ else ifeq ($(wildcard $(EXAMPLES_DIR)/$(NAME).cpp),)
 	@$(MAKE) --no-print-directory example-help
 	@exit 1
 else
+	@echo -e "${BOLDGREEN}Building example $(NAME) successfully.${RESET}"
 	$(CXX) $(CXXFLAGS) -o $(EXAMPLES_DIR)/$(NAME) $(EXAMPLES_DIR)/$(NAME).cpp $(LDFLAGS)
-	@echo "Built $(EXAMPLES_DIR)/$(NAME)"
 endif
 
-example-run: example
+example-run: example libfmt
+	@echo -e "${BOLDGREEN}Running example $(NAME)...${RESET}"
 	./$(EXAMPLES_DIR)/$(NAME)
+
+libfmt: third_party/fmt/build/libfmt.a
+
+third_party/fmt/build/libfmt.a:
+	cd third_party/fmt && mkdir -p build && cd build &&\
+		cmake -DFMT_DOC=OFF -DFMT_TEST=OFF -DFMT_INSTALL=OFF -DFMT_MASTER_PROJECT=OFF .. &&\
+		make -j
 
 .PHONY: all clean run debug testint testsimple test example example-help example-run docs docs-xml docs-pdf docs-open docs-pdf-open docs-clean docs-all docs-watch
