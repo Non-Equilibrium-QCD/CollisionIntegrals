@@ -9,6 +9,7 @@
 #include <omp.h>
 #include <fmt/core.h>
 #include <fmt/os.h>
+#include <fmt/color.h>
 
 
 namespace CollisionIntegralQCD {
@@ -57,9 +58,11 @@ inline double CollisionIntegral(double *x, const GSLARGS& args) {
 
     // SAMPLE p2 //
     double p2 = x[0] / (1.0 - x[0]) ; // maps [0,1] to [0,inf)
+
     if (x[0] == 1.0) {
         return 0.0;
     }
+
     // x[0] = p2 / (1.0 + p2);
     double Jacobian = (1.0 + p2) * (1.0 + p2);
 
@@ -192,59 +195,70 @@ namespace IntegrateQCD {
 std::vector<GSLVEGAS> vegasIntegrators;
 
 template<typename ProcessTag>
-void Compute(double (*Integrand)(double *, const GSLARGS &), std::string OutputFile) {
+void Compute(double (*Integrand)(double *, const GSLARGS &),
+             std::string OutputFile) {
     using Traits = ProcessTraits<ProcessTag>;
 
     size_t Np = 128;
     size_t Ncos = 16;
     double pMin = 1e-2;
     double pMax = 16.0;
+    std::vector<double> Results(Np * Ncos), Errors(Np * Ncos);
+    std::vector<double> pValues(Np, 0.0);
+    std::vector<double> cosThetaValues(Ncos, 0.0);
 
-    // Try to open output file
+    for (size_t i = 0; i < Np; i++) {
+        pValues[i] = pMin * std::exp(std::log(pMax / pMin) * i / (Np - 1));
+        // pValues[i] = pMin + (pMax - pMin) * i / (Np - 1);
+    }
+
+    for (size_t j = 0; j < Ncos; j++) {
+        cosThetaValues[j] = -1.0 + 2.0 * j / (Ncos - 1);
+    }
+
+    #pragma omp parallel for collapse(2)
+
+    for (size_t i = 0; i < Np; i++) {
+        for (size_t j = 0; j < Ncos; j++) {
+            GSLARGS args;
+            args.p1 = pValues[i];
+            args.cosTheta1 = cosThetaValues[j];
+            args.phi1 = 0.0;
+            args.fct = Integrand;
+            size_t tID = omp_get_thread_num();
+            double result, error;
+            vegasIntegrators[tID].integrate(args, 10000, &result, &error);
+            Results[j + i * Ncos] = result;
+            Errors[j + i * Ncos] = error;
+            #pragma omp critical
+            {
+                if (i % (Np / 4) == 0 && j == 0) {
+                    fmt::println(stderr,
+                                 "Progress: {}/{} p-values computed \r",
+                                 i, Np);
+                }
+            }
+        }
+    }
+
+    // OUTPUT RESULTS //
     auto file = fmt::output_file(OutputFile);
     file.print(
         "# p1  cosTheta1  f1(p1,cosTheta1)  C[f1](p1,cosTheta1)  Error \n");
-    #pragma omp parallel for ordered
 
     for (size_t j = 0; j < Ncos; j++) {
-        std::vector<double> Results(Np, 0.0), Errors(Np, 0.0), pValues(Np, 0.0);
-        GSLARGS args;
-        // args.cosTheta1 = 0.0;
-        args.cosTheta1 = -1.0 + 2.0 * j / (Ncos - 1);
-        args.phi1 = 0.0;
-        args.fct = Integrand;
-        size_t tID = omp_get_thread_num();
-
         for (size_t i = 0; i < Np; i++) {
-            args.p1 = pMin * std::exp(std::log(pMax / pMin) * i / (Np - 1));
-            // args.p1 = pMin + (pMax - pMin) * i / (Np - 1);
-
-            double result, error;
-            vegasIntegrators[tID].integrate(args, 10000, &result, &error);
-
-            Results[i] = result;
-            Errors[i] = error;
-            pValues[i] = args.p1;
+            double p = pValues[i];
+            double cosTheta = cosThetaValues[j];
+            // Use dist1 from traits for output (particle 1's distribution)
+            file.print("{} {} {} {} {} \n", p, cosTheta,
+                       Traits::dist1(p, cosTheta, 0.0),
+                       Results[j + i * Ncos], Errors[j + i * Ncos]);
         }
 
-        #pragma omp critical
-        {
-            fmt::println(stderr, "Thread {} completed ",
-                         tID);
-        }
-
-        #pragma omp ordered
-        {
-            for (size_t i = 0; i < Np; i++) {
-                // Use dist1 from traits for output (particle 1's distribution)
-                file.print("{} {} {} {} {} \n", pValues[i], args.cosTheta1,
-                             Traits::dist1(pValues[i], args.cosTheta1, 0.0),
-                             Results[i], Errors[i]);
-            }
-
-            file.print("\n");
-        }
+        file.print("\n");
     }
+
 
 }
 

@@ -24,7 +24,7 @@ constexpr T power_recursive(T base) {
 
     // Recursive step: x^n = x * x^(n-1)
     T result = 1;
-    for (int i = 0; i < exp; ++i) {
+    for (size_t i = 0; i < exp; ++i) {
         result *= base;
     }
     return result;

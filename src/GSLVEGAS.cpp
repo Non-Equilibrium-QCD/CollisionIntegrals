@@ -13,6 +13,7 @@ struct GSLARGS {
 namespace private_GSLVEGAS {
 
 double Integrand(double *x, size_t dim, void *params) {
+    (void)dim;  // Unused parameter
     GSLARGS args = *static_cast<GSLARGS *>(params);
     return args.fct(x, args);
 }

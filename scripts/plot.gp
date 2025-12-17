@@ -6,7 +6,7 @@ set log x
 
 set hidden3d
 
-splot "OUTPUT/result.dat" using 1:2:($4 * $1**2 / (2. * pi)**3) w l ls 2,\
+splot "OUTPUT/YM.dat" using 1:2:($4 * $1**2 / (2. * pi)**3) w l ls 2,\
       "../QCD-initial/OUTPUT/CgXgg_gg_0.txt" using 1:2:($3 / $5 * $1**2) w p ls 5 ps 0.5,\
 #
 

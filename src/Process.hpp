@@ -27,11 +27,13 @@ inline double fermi(double p, double T) {
 
 /// Gluon distribution (non-equilibrium)
 inline double gluon(double p, double cosTheta, double phi) {
+    (void)cosTheta; (void)phi;
     return std::exp(-p * p);// * std::exp(-cosTheta * cosTheta);
 }
 
 /// Quark distribution (non-equilibrium)
 inline double quark(double p, double cosTheta, double phi) {
+    (void)cosTheta; (void)phi;
     return std::exp(-p * p);
 }
 
@@ -69,6 +71,7 @@ static const double xi0q = std::exp(1.0) / M_SQRT2;
 inline double gg_gg(double s, double t, double u, 
                     double qt, double qu, 
                     double mDSqr, double mQSqr) {
+    (void)mQSqr; // not used in gg->gg
     double tBar = t * (qt * qt + xi0g * xi0g * mDSqr) / (qt * qt);
     double uBar = u * (qu * qu + xi0g * xi0g * mDSqr) / (qu * qu);
 
@@ -85,6 +88,9 @@ inline double qg_qg(double s, double t, double u,
                     double qt, double qu,
                     double mDSqr, double mQSqr) {
     // TODO: implement
+    (void)s; (void)t; (void)u;
+    (void)qt; (void)qu;
+    (void)mDSqr; (void)mQSqr;
     return 0.0;
 }
 
@@ -93,6 +99,9 @@ inline double qq_qq(double s, double t, double u,
                     double qt, double qu,
                     double mDSqr, double mQSqr) {
     // TODO: implement
+    (void)s; (void)t; (void)u;
+    (void)qt; (void)qu;
+    (void)mDSqr; (void)mQSqr;
     return 0.0;
 }
 

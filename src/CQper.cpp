@@ -239,8 +239,8 @@ void Compute(double (*Integrand)(double *, const GSLARGS&)) {
 
         #pragma omp critical
         {
-            fmt::println(stderr, "Thread {} completed ",
-                         tID);
+            fmt::println(stderr, "Thread {:2} completed ",
+                         fmt::styled(tID, fmt::emphasis::bold | fmt::color::green));
         }
 
         #pragma omp ordered
