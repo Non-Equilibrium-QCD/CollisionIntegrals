@@ -1,35 +1,28 @@
-# CollIntegral
+# Collision Integral Library
 
-QCD Collision Integral Computation Library for elastic 2 -> 2 scattering processes.
+Collision Integral Computation Library for elastic 2 <-> 2 elastic scattering processes.
 
 ## Overview
 
-This library computes collision integrals for QCD processes using Monte Carlo integration. It supports multiple integration backends (GSL VEGAS, Cuba SUAVE/VEGAS/Cuhre) with OpenMP parallelization.
+This library computes collision integrals for QCD processes using Monte Carlo integration. It supports GSL VEGAS with OpenMP parallelization.
 
 ## Prerequisites
 
-- C++17 compiler (GCC 7+, Clang 5+)
+- C++17 compiler: recent GCC
 - [GSL](https://www.gnu.org/software/gsl/) (GNU Scientific Library)
-- [Cuba](http://www.feynarts.de/cuba/) library
-- [fmt](https://fmt.dev/) library
+- [fmt](https://fmt.dev/) library (Included in `third_party/`)
+- [doctest](https://github.com/doctest/doctest) library (Included in `third_party/`)
 - OpenMP
 
-### Ubuntu/Debian
 
+## Usage
+
+Compile and run the YM example:
 ```bash
-sudo apt install libgsl-dev libfmt-dev
+make example NAME=YM       # build examples/YM.cpp
 ```
-
-For Cuba, download and install from: http://www.feynarts.de/cuba/
-
-## Building
-
-```bash
-make          # build main executable
-make testint  # build test executable
-make run      # build and run
-make debug    # build with debug flags
-```
+This will compute the collision integral for gluon-gluon scattering in `OUTPUT/QCDgg_gg.dat`.
+Take a look at the docs for how to compute your own processes!
 
 ## Documentation
 
@@ -42,34 +35,3 @@ make docs-pdf      # generate PDF (requires texlive)
 make docs-pdf-open # generate PDF and open
 make docs-clean    # remove generated docs
 ```
-
-## Project Structure
-
-```
-src/
-  main.cpp          # Entry point
-  Integral.cpp      # Collision integral implementation
-  GSLVEGAS.cpp      # GSL VEGAS integration wrapper
-  CUBAVEGAS.cpp     # Cuba library integration wrapper
-  constants.cpp     # Physical constants
-  QCD/
-    GLUON.cpp       # Gluon-specific calculations
-docs/
-  pages/            # Documentation source files
-```
-
-## Usage
-
-```cpp
-#include "Integral.cpp"
-
-int main() {
-    IntegrateQCD::Setup();
-    IntegrateQCD::Compute();
-    return 0;
-}
-```
-
-## License
-
-[Add license here]
