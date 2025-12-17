@@ -9,11 +9,12 @@ build:
     python: "3.12"
   apt_packages:
     - doxygen
-  commands:
-    # Generate Doxygen XML for Breathe
-    - cd docs && doxygen Doxyfile
-    # Build Sphinx documentation
-    - python -m sphinx -b html docs/source $READTHEDOCS_OUTPUT/html
+  jobs:
+    pre_build:
+      - cd docs && doxygen Doxyfile
+
+sphinx:
+  configuration: docs/source/conf.py
 
 python:
   install:
