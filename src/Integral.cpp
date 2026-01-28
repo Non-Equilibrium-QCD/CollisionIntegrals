@@ -2,7 +2,7 @@
 
 #include <cmath>
 #include "constants.cpp"
-#include "Process.hpp"
+#include "ProcessTraits.hpp"
 #include <gsl/gsl_monte_vegas.h>
 #include <vector>
 #include "GSLVEGAS.cpp"
@@ -14,6 +14,7 @@
 
 
 namespace CollisionIntegral {
+constexpr size_t dimensions = 5;
 struct GSLARGS {
     double p1, cosTheta1, phi1;
     double (*fct)(double *, const GSLARGS &);
@@ -169,8 +170,6 @@ inline double CollisionIntegral(double *x, const GSLARGS& args) {
 
     double s1 = Traits::stat(f1, f2, f3, f4);
     double M1 = Traits::matrix(s, t, u, q13, q23, mDSqr, mQSqr);
-    // double s2 = Traits::stat(f1, f2, f4, f3);
-    // double M2 = Traits::matrix(s, u, t, q23, q13, mDSqr, mQSqr);
 
     double j  = Jacobian / (16.0 * p1 * p1);
     constexpr double TwoPi = power_recursive<double, 5>(2.0 * M_PI);
@@ -189,7 +188,6 @@ inline double CollisionIntegral(double *x, const GSLARGS& args) {
     }
 
     return j * c * s1 * M1;
-    // return 0.5 * j * c * (s1 * M1 + s2 * M2);
 }
 
 }
@@ -273,7 +271,7 @@ void Setup() {
     vegasIntegrators.reserve(omp_get_max_threads());
 
     for (int i = 0; i < omp_get_max_threads(); i++) {
-        vegasIntegrators.push_back(GSLVEGAS(5));
+        vegasIntegrators.push_back(GSLVEGAS(CollisionIntegral::dimensions));
     }
 }
 }

@@ -33,3 +33,9 @@ plot "OUTPUT/result.dat" using 1:($4 * $1**n / (2. * pi)**3) w l ls 2,\
 pl    "../QCD/OUTPUT/CgXgg_gg_0.txt" using 1:($3 / $5) w lp ls 4,\
       "../QCD-initial/OUTPUT/CgXgg_gg_0.txt" using 1:($3 / $5) w lp ls 5,\
 #
+
+
+# Hat function
+splot "OUTPUT/HatQCDgg_gg.dat" u 1:2:($3/$9) w pm3d
+
+splot "OUTPUT/HatQCDgg_gg.dat" u 1:2:($7/$9) w pm3d

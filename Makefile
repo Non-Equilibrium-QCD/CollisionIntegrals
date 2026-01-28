@@ -1,7 +1,12 @@
 # Compiler and flags
 CXX      := g++
-CXXFLAGS := -std=c++17 -Wall -Wextra -fopenmp -g -march=native
-CXXFLAGS += -O3 -funroll-loops -flto
+CXXFLAGS := -std=c++17 -Wall -Wextra -fopenmp -march=native
+# CXXFLAGS += -O3 -funroll-loops -flto
+FASTFLAGS := -O3 -funroll-loops -flto
+ifdef DEBUG
+	FASTFLAGS := -Og -g
+endif
+CXXFLAGS += $(FASTFLAGS)
 CXXFLAGS += -I./third_party/fmt/include/ -L./third_party/fmt/build -lfmt
 LDFLAGS  := -lgsl -lgslcblas -lm -lfmt -fopenmp -lcuba
 
@@ -53,7 +58,10 @@ SPHINXBLDDIR  = docs/build
 docs-xml:
 	cd docs && doxygen Doxyfile
 
-docs: docs-xml
+docs-api:
+	breathe-apidoc -o docs/source/api docs/xml -p CollIntegral
+
+docs: docs-xml docs-api
 	$(SPHINXBUILD) -b html $(SPHINXSRCDIR) $(SPHINXBLDDIR)/html
 	@echo "Documentation generated at $(SPHINXBLDDIR)/html/index.html"
 
@@ -109,7 +117,7 @@ else ifeq ($(wildcard $(EXAMPLES_DIR)/$(NAME).cpp),)
 	@$(MAKE) --no-print-directory example-help
 	@exit 1
 else
-	@echo -e "${BOLDGREEN}Building example $(NAME) successfully.${RESET}"
+	@echo -e "${BOLDGREEN}Building example $(NAME). ${RESET}"
 	$(CXX) $(CXXFLAGS) -o $(EXAMPLES_DIR)/$(NAME) $(EXAMPLES_DIR)/$(NAME).cpp $(LDFLAGS)
 endif
 

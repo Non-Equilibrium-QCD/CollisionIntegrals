@@ -1,4 +1,4 @@
-#include "../src/Integral.cpp"
+#include "../src/HatFunctionExpansion2D.cpp"
 
 namespace DistributionQCD {
 /// Gluon distribution (non-equilibrium)
@@ -53,8 +53,26 @@ struct ProcessTraits<QCDgg_gg> {
     static constexpr double nuA = nuG;
 };
 
+namespace Distribution {
+
+inline double Gaussian(double p, double cosTheta, double phi) {
+    (void)cosTheta; (void)phi;
+    return std::exp(-p * p) * std::exp(-(1.0 - cosTheta) * (1.0 - cosTheta)) *
+           std::exp(-phi * phi);
+}
+}
+
 int main() {
-    Integrate::Setup();
-    Integrate::Compute<QCDgg_gg>("OUTPUT/QCDgg_gg.dat");
+
+    // Setup the basis grids
+    HatFunctionBasis::Setup(
+        {.Nx = 128, .xmin = 0.0, .xmax = 10.0},    // Momentum space grid
+        {.Nx = 16,  .xmin = -1.0, .xmax = 1.0},    // cos(theta) space grid
+        {.Nx = 1,  .xmin = 0.0, .xmax = 2.0 * M_PI} // phi space grid
+    );
+
+    // ExpandFct::Compute<Distribution::Gaussian>("OUTPUT/Gaussian.dat");
+    CollisionExpansion::Setup();
+    CollisionExpansion::Compute<QCDgg_gg>("OUTPUT/HatQCDgg_gg.dat");
     return EXIT_SUCCESS;
 }

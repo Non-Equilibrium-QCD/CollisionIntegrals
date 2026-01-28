@@ -19,7 +19,6 @@ double Integrand(double *x, size_t dim, void *params) {
 class GSLVEGAS {
 public:
     explicit GSLVEGAS(size_t dim): dimension(dim) {
-        // vegasState = gsl_monte_vegas_alloc(dimension);
         rng = gsl_rng_alloc(gsl_rng_default);
     }
 
@@ -29,22 +28,18 @@ public:
 
     // Move constructor
     GSLVEGAS(GSLVEGAS&& other) noexcept
-        : dimension(other.dimension), /* vegasState(other.vegasState),*/ rng(other.rng) {
-        // other.vegasState = nullptr;
+        : dimension(other.dimension), rng(other.rng) {
         other.rng = nullptr;
     }
 
     // Move assignment
     GSLVEGAS &operator=(GSLVEGAS&& other) noexcept {
         if (this != &other) {
-            // if (vegasState) { gsl_monte_vegas_free(vegasState); }
 
             if (rng) { gsl_rng_free(rng); }
 
             dimension = other.dimension;
-            // vegasState = other.vegasState;
             rng = other.rng;
-            // other.vegasState = nullptr;
             other.rng = nullptr;
         }
 
@@ -74,13 +69,11 @@ public:
     }
 
     ~GSLVEGAS() {
-        // if (vegasState) { gsl_monte_vegas_free(vegasState); }
 
         if (rng) { gsl_rng_free(rng); }
     }
 
 private:
     size_t dimension;
-    // gsl_monte_vegas_state *vegasState;
     gsl_rng *rng;
 };

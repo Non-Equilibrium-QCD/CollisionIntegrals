@@ -1,11 +1,12 @@
 #pragma once
 
 #include <cmath>
-#include "constants.cpp"
+#include "../constants.cpp"
+#include "../ProcessTraits.hpp"
 
 /**
- * @file Process.hpp
- * @brief Compile-time process definitions for collision integrals.
+ * @file QCDProcess.hpp
+ * @brief QCD process definitions for collision integrals.
  * 
  * Each process defines:
  * - Distribution functions for particles 1-4
@@ -107,21 +108,6 @@ inline double qq_qq(double s, double t, double u,
 
 } // namespace MatrixElement
 
-
-// ============================================================================
-// Process Traits
-// ============================================================================
-
-/**
- * @brief Process trait template.
- * 
- * Specialize this for each scattering process to define:
- * - dist1, dist2, dist3, dist4: distribution functions
- * - stat: statistical factor
- * - matrix: matrix element squared
- */
-template<typename ProcessTag>
-struct ProcessTraits;
 
 // ============================================================================
 // Process Tags
