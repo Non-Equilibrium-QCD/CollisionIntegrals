@@ -22,7 +22,7 @@ struct GSLARGS {
 std::vector<GSLVEGAS> vegasIntegrators;
 constexpr size_t dimensions = 3;
 
-template<double (* Dist_g)(double, double, double), double (* Dist_q)(double, double, double)>
+template<double (* Dist_g)(double, double, double)>
 inline double CollisionIntegral(double *x, const GSLARGS& args) {
 
     // GET p1 ANGULAR COORDINATES //
@@ -38,37 +38,44 @@ inline double CollisionIntegral(double *x, const GSLARGS& args) {
     double phi1 = 2.0 * M_PI * x[2];
     double Jacobian = (1.0 + p1) * (1.0 + p1) * (2.0 * M_PI) * 2.0;
 
-    double fg = Dist_g(p1, cosTheta1, phi1);
-    double fq = Dist_q(p1, cosTheta1, phi1);
+    double f1 = Dist_g(p1, cosTheta1, phi1);
 
     double j  = Jacobian / (2.0 * p1);
 
     double Measure = p1 * p1 / std::pow(2.0 * M_PI, 3);
 
-    if (!std::isfinite(fg) || !std::isfinite(j) || !std::isfinite(fq)) {
+    if (!std::isfinite(f1) || !std::isfinite(j) ) {
         fmt::println(stderr, "NaN encountered in integrand:"
-                             " fg={}, fq={}, j={}",
-                     fg, fq, j);
+                             " f1={}, j={}",
+                     f1, j);
         return 0.0;
     }
 
-    return 4.0 * g * g * j * Measure * ( 2.0 * Nc * fg + 2.0 * Nf * fq);
+    return j * Measure * ( f1 );
 }
 
 template<double (* Dist_g)(double, double, double), double (* Dist_q)(double, double, double)>
 std::array<double, 2> Compute() {
-    auto Integrand = CollisionIntegral<Dist_g, Dist_q>;
 
     GSLARGS args;
-    args.fct = Integrand;
+    args.fct = CollisionIntegral<Dist_g>;;
     size_t tID = omp_get_thread_num();
-    double result, error;
-    vegasIntegrators[tID].integrate(args, static_cast<int>(1e6), &result, &error);
+    double r1, e1, r2, e2;
+    vegasIntegrators[tID].integrate(args, static_cast<int>(1e6), &r1, &e1);
+    args.fct = CollisionIntegral<Dist_q>;
+    vegasIntegrators[tID].integrate(args, static_cast<int>(1e7), &r2, &e2);
 
-    return {result, error};
+    return {r1, r2};
 
 }
 
+double mDfct(double Ig, double Iq) {
+    return 4.0 * g * g * ( 2.0 * Nc * Ig + 2.0 * Nf * Iq);
+}
+
+double mQfct(double Ig, double Iq) {
+    return g * g * CF * ( 2.0 * Ig + 2.0 * Iq);
+}
 void Setup() {
     vegasIntegrators.reserve(omp_get_max_threads());
 

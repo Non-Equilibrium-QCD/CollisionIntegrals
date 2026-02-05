@@ -78,9 +78,11 @@ int main() {
 
     // ExpandFct::Compute<Distribution::Gaussian>("OUTPUT/Gaussian.dat");
     ThermalMasses::Setup();
-    auto [res, err] = ThermalMasses::Compute<DistributionQCD::gluon, DistributionQCD::quark>();
-    mDSqr = res;
-    fmt::println("Gluon thermal mass squared: {} +/- {}", res, err);
+    auto [r1, r2] = ThermalMasses::Compute<DistributionQCD::gluon, DistributionQCD::quark>();
+    mDSqr = ThermalMasses::mDfct(r1, r2);
+    mQSqr = ThermalMasses::mQfct(r1, r2);
+    fmt::println("Gluon thermal mass squared: {} ", mDSqr);
+    fmt::println("Quark thermal mass squared: {} ", mQSqr);
 
     CollisionExpansion::Setup();
     CollisionExpansion::Compute<QCDgg_gg>("OUTPUT/HatQCDgg_gg.dat", static_cast<int>(1e4));
