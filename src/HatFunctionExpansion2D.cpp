@@ -134,18 +134,16 @@ inline double CollisionIntegral(double *x, const GSLARGS& args) {
     // double Jacobian = (pMax - pMin) * (cosThetaMax - cosThetaMin) * (phiMax - phiMin);
 
     // GET p1 ANGULAR COORDINATES //
-    // SAMPLE p2 //
-    double p1 = x[0] / (1.0 - x[0]) ; // maps [0,1] to [0,inf)
-
-    if (x[0] == 1.0) {
-        return 0.0;
-    }
-
-    // x[0] = p2 / (1.0 + p2);
-    double cosTheta1 = -1.0 + 2.0 * x[1];
+    // SAMPLE p1 //
+    double pMax = args.pMax;
+    double pMin = args.pMin;
+    double cosThetaMax = args.cosThetaMax;
+    double cosThetaMin = args.cosThetaMin;
+    double p1 = pMin + (pMax - pMin) * x[0]; // Map [0,1] to [pMin, pMax]
+    double cosTheta1 = cosThetaMin + (cosThetaMax - cosThetaMin) * x[1]; // Map [0,1] to [cosThetaMin, cosThetaMax]
     double Sin1 = sqrt(1.0 - cosTheta1 * cosTheta1);
     double phi1 = 2.0 * M_PI * x[2];
-    double Jacobian = (1.0 + p1) * (1.0 + p1) * (2.0 * M_PI) * 2.0;
+    double Jacobian = (2.0 * M_PI) * (pMax - pMin) * (cosThetaMax - cosThetaMin);
 
     double p1x = p1 * Sin1 * cos(phi1);
     double p1y = p1 * Sin1 * sin(phi1);
@@ -251,9 +249,9 @@ inline double CollisionIntegral(double *x, const GSLARGS& args) {
     double p4z = p2z + qz;
 
     double p4 = sqrt(p4x * p4x + p4y * p4y + p4z * p4z);
-    double pMax = HatFunctionBasis::MomentumParams.xmax;
+    double xMax = HatFunctionBasis::MomentumParams.xmax;
 
-    if (p1 >= pMax || p2 >= pMax || p3 >= pMax || p4 >= pMax) {
+    if (p2 >= xMax || p3 >= xMax || p4 >= xMax) {
         return 0.0;
     }
 
@@ -282,16 +280,16 @@ inline double CollisionIntegral(double *x, const GSLARGS& args) {
     double s1 = Traits::stat(f1, f2, f3, f4);
     double M1 = Traits::matrix(s, t, u, q13, q23, mDSqr, mQSqr);
 
-    // 2 + 1 -> 3 + 4
-    double s2 = Traits::stat(f2, f1, f3, f4);
-    double M2 = Traits::matrix(s, u, t, q23, q13, mDSqr, mQSqr);
-
-    // 3 + 4 -> 1 + 2
-    double s3 = Traits::stat(f3, f4, f1, f2);
-    double M3 = Traits::matrix(s, t, u, q13, q23, mDSqr, mQSqr);
-    // 4 + 3 -> 1 + 2
-    double s4 = Traits::stat(f4, f3, f1, f2);
-    double M4 = Traits::matrix(s, u, t, q23, q13, mDSqr, mQSqr);
+    // // 2 + 1 -> 3 + 4
+    // double s2 = Traits::stat(f2, f1, f3, f4);
+    // double M2 = Traits::matrix(s, u, t, q23, q13, mDSqr, mQSqr);
+    //
+    // // 3 + 4 -> 1 + 2
+    // double s3 = Traits::stat(f3, f4, f1, f2);
+    // double M3 = Traits::matrix(s, t, u, q13, q23, mDSqr, mQSqr);
+    // // 4 + 3 -> 1 + 2
+    // double s4 = Traits::stat(f4, f3, f1, f2);
+    // double M4 = Traits::matrix(s, u, t, q23, q13, mDSqr, mQSqr);
 
     double j  = Jacobian / (16.0 * p1 * p1);
     constexpr double TwoPi = power_recursive<double, 5>(2.0 * M_PI);
@@ -325,11 +323,11 @@ inline double CollisionIntegral(double *x, const GSLARGS& args) {
     //       s4 * M4;
 
     double Measure = p1 * p1 / std::pow(2.0 * M_PI, 3);
-    return j * c * sM / 8.0 * Measure;
+    return j * c * sM * Measure;
 }
 
 template<typename ProcessTag>
-void Compute(std::string OutputFile) {
+void Compute(std::string OutputFile, int Ncalls) {
     using Traits = ProcessTraits<ProcessTag>;
     auto Integrand = CollisionIntegral<ProcessTag>;
 
@@ -344,10 +342,18 @@ void Compute(std::string OutputFile) {
             GSLARGS args;
             args.indexP = i;
             args.indexCosTheta = j;
+            args.pMin = HatFunctionBasis::MomentumVals[
+                            (i == 0) ? 0 : i - 1];;
+            args.pMax = HatFunctionBasis::MomentumVals[
+                            (i == Np - 1) ? Np - 1 : i + 1];
+            args.cosThetaMin = HatFunctionBasis::CosThetaVals[
+                                   (j == 0) ? 0 : j - 1];;
+            args.cosThetaMax = HatFunctionBasis::CosThetaVals[
+                                   (j == Ncos - 1) ? Ncos - 1 : j + 1];
             args.fct = Integrand;
             size_t tID = omp_get_thread_num();
             double result, error;
-            vegasIntegrators[tID].integrate(args, static_cast<int>(1e6), &result, &error);
+            vegasIntegrators[tID].integrate(args, Ncalls, &result, &error);
             Results[j + i * Ncos] = result;
             Errors[j + i * Ncos] = error;
             #pragma omp critical
@@ -422,6 +428,7 @@ void Compute(std::string OutputFile) {
                        dist4[j + i * Ncos],
                        Results[j + i * Ncos],
                        Errors[j + i * Ncos],
+                       (2.0 * M_PI) *
                        HatFunctionBasis::MomentumArea[i] *
                        HatFunctionBasis::CosThetaArea[j]);
         }

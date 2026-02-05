@@ -10,3 +10,4 @@ build
 
 examples/*
 !examples/*.*
+docs/source/api

@@ -14,22 +14,21 @@
 
 typedef QUAD<3, 52> GaussQuad3D;
 
-namespace {
+namespace ThermalMasses {
 struct GSLARGS {
     double (*fct)(double *, const GSLARGS &);
 };
-}
 
-class ThermalMasses {
-static std::vector<GSLVEGAS> vegasIntegrators;
-static constexpr size_t dimensions = 3;
+std::vector<GSLVEGAS> vegasIntegrators;
+constexpr size_t dimensions = 3;
 
-template<typename Dist>
-static inline double CollisionIntegral(double *x, const GSLARGS& args) {
+template<double (* Dist_g)(double, double, double), double (* Dist_q)(double, double, double)>
+inline double CollisionIntegral(double *x, const GSLARGS& args) {
 
     // GET p1 ANGULAR COORDINATES //
     // SAMPLE p2 //
     double p1 = x[0] / (1.0 - x[0]) ; // maps [0,1] to [0,inf)
+
     if (x[0] == 1.0) {
         return 0.0;
     }
@@ -39,26 +38,26 @@ static inline double CollisionIntegral(double *x, const GSLARGS& args) {
     double phi1 = 2.0 * M_PI * x[2];
     double Jacobian = (1.0 + p1) * (1.0 + p1) * (2.0 * M_PI) * 2.0;
 
-    double f1 = Dist(p1, cosTheta1, phi1);
+    double fg = Dist_g(p1, cosTheta1, phi1);
+    double fq = Dist_q(p1, cosTheta1, phi1);
 
-    double j  = Jacobian / (16.0 * p1);
+    double j  = Jacobian / (2.0 * p1);
 
+    double Measure = p1 * p1 / std::pow(2.0 * M_PI, 3);
 
-    if (!std::isfinite(f1) || !std::isfinite(j)) {
+    if (!std::isfinite(fg) || !std::isfinite(j) || !std::isfinite(fq)) {
         fmt::println(stderr, "NaN encountered in integrand:"
-                             " s1={}, j={}",
-                     f1, j);
+                             " fg={}, fq={}, j={}",
+                     fg, fq, j);
         return 0.0;
     }
 
-
-    double Measure = p1 * p1 / std::pow(2.0 * M_PI, 3);
-    return j * f1 * Measure;
+    return 4.0 * g * g * j * Measure * ( 2.0 * Nc * fg + 2.0 * Nf * fq);
 }
 
-template<typename Dist>
-static std::array<double, 2> Compute() {
-    auto Integrand = CollisionIntegral<Dist>;
+template<double (* Dist_g)(double, double, double), double (* Dist_q)(double, double, double)>
+std::array<double, 2> Compute() {
+    auto Integrand = CollisionIntegral<Dist_g, Dist_q>;
 
     GSLARGS args;
     args.fct = Integrand;
@@ -70,7 +69,7 @@ static std::array<double, 2> Compute() {
 
 }
 
-ThermalMasses() {
+void Setup() {
     vegasIntegrators.reserve(omp_get_max_threads());
 
     for (int i = 0; i < omp_get_max_threads(); i++) {

@@ -27,3 +27,8 @@ MACRO_EXPANSION        = YES
 # Quiet
 QUIET                  = YES
 WARNINGS               = YES
+
+
+# EXCLUDE
+EXCLUDE_SYMBOLS       = boost::*, std::*, @*
+EXTRACT_ANON_NSPACES  = NO

@@ -1,10 +1,15 @@
 #include "../src/HatFunctionExpansion2D.cpp"
+#include "../src/ComputeThermalMasses.cpp"
 
 namespace DistributionQCD {
 /// Gluon distribution (non-equilibrium)
 inline double gluon(double p, double cosTheta, double phi) {
     (void)cosTheta; (void)phi;
-    return std::exp(-p * p);// * std::exp(-cosTheta * cosTheta);
+    return std::exp(-p * p - cosTheta * cosTheta);// * std::exp(-cosTheta * cosTheta);
+}
+inline double quark(double p, double cosTheta, double phi) {
+    (void) p; (void)cosTheta; (void)phi;
+    return 0.0;
 }
 }
 
@@ -67,12 +72,17 @@ int main() {
     // Setup the basis grids
     HatFunctionBasis::Setup(
         {.Nx = 128, .xmin = 0.0, .xmax = 10.0},    // Momentum space grid
-        {.Nx = 16,  .xmin = -1.0, .xmax = 1.0},    // cos(theta) space grid
+        {.Nx = 128, .xmin = -1.0, .xmax = 1.0},    // cos(theta) space grid
         {.Nx = 1,  .xmin = 0.0, .xmax = 2.0 * M_PI} // phi space grid
     );
 
     // ExpandFct::Compute<Distribution::Gaussian>("OUTPUT/Gaussian.dat");
+    ThermalMasses::Setup();
+    auto [res, err] = ThermalMasses::Compute<DistributionQCD::gluon, DistributionQCD::quark>();
+    mDSqr = res;
+    fmt::println("Gluon thermal mass squared: {} +/- {}", res, err);
+
     CollisionExpansion::Setup();
-    CollisionExpansion::Compute<QCDgg_gg>("OUTPUT/HatQCDgg_gg.dat");
+    CollisionExpansion::Compute<QCDgg_gg>("OUTPUT/HatQCDgg_gg.dat", static_cast<int>(1e4));
     return EXIT_SUCCESS;
 }

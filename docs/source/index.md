@@ -18,8 +18,9 @@ This library computes collision integrals for QCD processes using Monte Carlo in
 
 getting-started
 Process
+ThermalMasses
 Integral
-SimpleIntegral
 CqPerp
+FunctionExpansion
 api
 ```

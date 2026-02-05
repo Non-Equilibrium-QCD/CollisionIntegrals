@@ -36,6 +36,28 @@ pl    "../QCD/OUTPUT/CgXgg_gg_0.txt" using 1:($3 / $5) w lp ls 4,\
 
 
 # Hat function
-splot "OUTPUT/HatQCDgg_gg.dat" u 1:2:($3/$9) w pm3d
+set multiplot layout 2,1 title "Hat functions"
+set auto
+set xr[0:3]
+set sample 1000; set isosample 20
+splot "OUTPUT/HatQCDgg_gg.dat" u 1:2:($3 / $9 * $1**2) w pm3d,\
+      exp(-x**2-y**2) * x**2
+splot "OUTPUT/nG.dat" u 1:2:($3/$4 * (2 * pi)**3 * $1**2) w pm3d,\
+      exp(-x**2-y**2) * x**2
+unset multiplot
 
-splot "OUTPUT/HatQCDgg_gg.dat" u 1:2:($7/$9) w pm3d
+# Hat function
+unset log x
+set multiplot layout 2,1 title "Hat functions"
+set xr[0:3]
+set style fill transparent solid 0.5 noborder
+set hidden3d
+splot "OUTPUT/CgXgg_gg.dat" u 1:2:($3/$5 * (2 * pi)**3 * $1**3) w l lt -1
+splot "OUTPUT/HatQCDgg_gg.dat" u 1:2:($7 / $9 * $1**3) w l lt -1
+unset multiplot
+
+
+set style fill transparent solid 0.5 noborder
+set hidden3d
+splot "data1.dat" with pm3d, \
+      "data2.dat" with lines lt -1
