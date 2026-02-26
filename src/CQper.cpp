@@ -10,6 +10,7 @@
 #include <fmt/core.h>
 #include <fmt/os.h>
 #include <fmt/color.h>
+#define CQPERP_LINEAR_P2 // Uncomment to use linear sampling for p2 instead of transform sampling
 
 namespace CQperpIntegral {
 constexpr size_t dimensions = 3; // p2, omega, phi2q
@@ -23,15 +24,15 @@ struct GSLARGS {
 
 /**
  * @brief Computes C(q_perp) for 2->2 processes using Monte Carlo integration.
- * 
+ *
  * This implements the integral from CqPerp.md:
  * C(q_perp) = (1/(2pi)^2) * (1/q_perp^4) * integral[dw dp2 dphi2q] |M|^2 * F[f]
- * 
+ *
  * The integration variables are:
  * - x[0]: maps to p2 in [(q-w)/2, infinity)
  * - x[1]: maps to omega in (-infinity, +infinity) via tan transform
  * - x[2]: maps to phi2q in [0, 2*pi)
- * 
+ *
  * @tparam ProcessTag Tag type identifying the process.
  *         ProcessTraits<ProcessTag> must define:
  *         - dist2, dist4: distribution functions for particles 2 and 4
@@ -45,11 +46,13 @@ template<typename ProcessTag>
 inline double CQperpIntegrand(double *x, const GSLARGS& args) {
     using Traits = ProcessTraits<ProcessTag>;
 
-    double qPerp = args.qPerp;
     (void)args.p1; // p1 -> infinity limit
     double cosTheta1 = args.cosTheta1;
     double Sin1 = std::sqrt(1.0 - cosTheta1 * cosTheta1);
     double phi1 = args.phi1;
+    // Azimuthal angle of q relative to p1 (from args)
+    double qPerp = args.qPerp;
+    double Phi1Q = args.Phi1Q;
 
     // SET BASIS VECTORS WRT p1 //
     double ep1[3], ep2[3], ep3[3];
@@ -69,7 +72,8 @@ inline double CQperpIntegrand(double *x, const GSLARGS& args) {
     // SAMPLE omega from -infinity to +infinity via tan transform //
     // x[1] in (0,1) -> omega in (-inf, +inf)
     double omega = std::tan(M_PI * (x[1] - 0.5));
-    double dOmega_dx = M_PI / (std::cos(M_PI * (x[1] - 0.5)) * std::cos(M_PI * (x[1] - 0.5)));
+    double dOmega_dx = M_PI / (std::cos(M_PI * (x[1] - 0.5)) * std::cos(M_PI *
+                               (x[1] - 0.5)));
 
     // Compute q = sqrt(qPerp^2 + omega^2)
     double q = std::sqrt(qPerp * qPerp + omega * omega);
@@ -78,17 +82,26 @@ inline double CQperpIntegrand(double *x, const GSLARGS& args) {
         return 0.0;
     }
 
-    // SAMPLE p2 from (q - omega)/2 to infinity //
-    // Using transform: p2 = p2Min + y/(1-y) where y = x[0]
+    // SAMPLE p2 from (q - omega)/2 to infinity (or p2Max) //
     double p2Min = std::max(0.0, (q - omega) / 2.0);
-    
+    double p2, dp2_dx;
+
+    #ifdef CQPERP_LINEAR_P2
+    // Linear sampling: p2 in [p2Min, p2Max]
+    constexpr double p2Max = 100.0;
+    p2 = p2Min + (p2Max - p2Min) * x[0];
+    dp2_dx = (p2Max - p2Min);
+    #else
+
+    // Transform sampling: p2 = p2Min + y/(1-y) for y in [0,1) -> p2 in [p2Min, inf)
     if (x[0] >= 1.0 - 1e-12) {
         return 0.0;
     }
-    
+
     double y = x[0];
-    double p2 = p2Min + y / (1.0 - y);
-    double dp2_dy = 1.0 / ((1.0 - y) * (1.0 - y));
+    p2 = p2Min + y / (1.0 - y);
+    dp2_dx = 1.0 / ((1.0 - y) * (1.0 - y));
+    #endif
 
     // SAMPLE Phi2q //
     double Phi2Q = 2.0 * M_PI * x[2];
@@ -110,13 +123,14 @@ inline double CQperpIntegrand(double *x, const GSLARGS& args) {
     double Cos1Q = omega / q;
     double Sin1Q = std::sqrt(1.0 - Cos1Q * Cos1Q);
 
-    // Azimuthal angle of q relative to p1 (from args)
-    double Phi1Q = args.Phi1Q;
 
     // SET q VECTOR using basis vectors wrt p1 //
-    double qx = q * (Cos1Q * ep1[0] + Sin1Q * std::cos(Phi1Q) * ep2[0] + Sin1Q * std::sin(Phi1Q) * ep3[0]);
-    double qy = q * (Cos1Q * ep1[1] + Sin1Q * std::cos(Phi1Q) * ep2[1] + Sin1Q * std::sin(Phi1Q) * ep3[1]);
-    double qz = q * (Cos1Q * ep1[2] + Sin1Q * std::cos(Phi1Q) * ep2[2] + Sin1Q * std::sin(Phi1Q) * ep3[2]);
+    double qx = q * (Cos1Q * ep1[0] + Sin1Q * std::cos(Phi1Q) * ep2[0] + Sin1Q *
+                     std::sin(Phi1Q) * ep3[0]);
+    double qy = q * (Cos1Q * ep1[1] + Sin1Q * std::cos(Phi1Q) * ep2[1] + Sin1Q *
+                     std::sin(Phi1Q) * ep3[1]);
+    double qz = q * (Cos1Q * ep1[2] + Sin1Q * std::cos(Phi1Q) * ep2[2] + Sin1Q *
+                     std::sin(Phi1Q) * ep3[2]);
 
     // DETERMINE ANGLES of q vector //
     double CosQ = qz / q;
@@ -139,9 +153,12 @@ inline double CQperpIntegrand(double *x, const GSLARGS& args) {
     eq3[2] = 0.0;
 
     // SET p2 VECTOR //
-    double p2x = p2 * (Cos2Q * eq1[0] + Sin2Q * std::cos(Phi2Q) * eq2[0] + Sin2Q * std::sin(Phi2Q) * eq3[0]);
-    double p2y = p2 * (Cos2Q * eq1[1] + Sin2Q * std::cos(Phi2Q) * eq2[1] + Sin2Q * std::sin(Phi2Q) * eq3[1]);
-    double p2z = p2 * (Cos2Q * eq1[2] + Sin2Q * std::cos(Phi2Q) * eq2[2] + Sin2Q * std::sin(Phi2Q) * eq3[2]);
+    double p2x = p2 * (Cos2Q * eq1[0] + Sin2Q * std::cos(Phi2Q) * eq2[0] + Sin2Q *
+                       std::sin(Phi2Q) * eq3[0]);
+    double p2y = p2 * (Cos2Q * eq1[1] + Sin2Q * std::cos(Phi2Q) * eq2[1] + Sin2Q *
+                       std::sin(Phi2Q) * eq3[1]);
+    double p2z = p2 * (Cos2Q * eq1[2] + Sin2Q * std::cos(Phi2Q) * eq2[2] + Sin2Q *
+                       std::sin(Phi2Q) * eq3[2]);
 
     // SET p4 VECTOR = p2 + q //
     double p4x = p2x + qx;
@@ -161,7 +178,9 @@ inline double CQperpIntegrand(double *x, const GSLARGS& args) {
 
     // Matrix element from ProcessTraits
     // Signature: matrix(s, t, u, qt, qu, mDSqr, mQSqr)
-    double matrixFactor = Traits::matrix(s, t, qt, mDSqr, mQSqr);
+    double c1 = 2 * (2 * p2 - omega);
+    double c2 = 4 * p2 * Sin1Q * Sin2Q * std::cos(Phi1Q - Phi2Q);
+    double matrixFactor = Traits::matrix(s, t, omega, qt, mDSqr, mQSqr, c1, c2);
 
     // Get distribution functions for p2 and p4
     double cosTheta2 = p2z / p2;
@@ -180,7 +199,7 @@ inline double CQperpIntegrand(double *x, const GSLARGS& args) {
     double deltaJacobian = p4 / (p2 * q);
 
     // Full Jacobian
-    double Jacobian = dOmega_dx * dp2_dy * dPhi2Q * deltaJacobian;
+    double Jacobian = dOmega_dx * dp2_dx * dPhi2Q * deltaJacobian;
 
     double result = Jacobian * matrixFactor * statFactor;
 
@@ -199,14 +218,15 @@ std::vector<GSLVEGAS> vegasIntegrators;
 
 /**
  * @brief Compute C(q_perp, Phi1Q) for a range of q_perp and Phi1Q values.
- * 
+ *
  * @tparam ProcessTag Tag type identifying the process.
  * @param OutputFile Output file path.
  * @param p1 Momentum of particle 1 (default: 1.0).
  * @param cosTheta1 Angle of particle 1 (default: 1.0, i.e., along z-axis).
  */
 template<typename ProcessTag>
-void Compute(const std::string& OutputFile, double p1 = 1.0, double cosTheta1 = 1.0, double phi1 = 0.0) {
+void Compute(const std::string& OutputFile, double p1 = 1.0,
+             double cosTheta1 = 1.0, double phi1 = 0.0) {
     auto Integrand = CQperpIntegral::CQperpIntegrand<ProcessTag>;
 
     size_t NqPerp = 64;
@@ -219,7 +239,8 @@ void Compute(const std::string& OutputFile, double p1 = 1.0, double cosTheta1 = 
     std::vector<double> Results(NqPerp * NPhi1Q), Errors(NqPerp * NPhi1Q);
 
     for (size_t i = 0; i < NqPerp; i++) {
-        qPerpValues[i] = qPerpMin * std::exp(std::log(qPerpMax / qPerpMin) * i / (NqPerp - 1));
+        qPerpValues[i] = qPerpMin * std::exp(std::log(qPerpMax / qPerpMin) * i /
+                                             (NqPerp - 1));
     }
 
     for (size_t j = 0; j < NPhi1Q; j++) {
@@ -227,6 +248,7 @@ void Compute(const std::string& OutputFile, double p1 = 1.0, double cosTheta1 = 
     }
 
     #pragma omp parallel for collapse(2)
+
     for (size_t i = 0; i < NqPerp; i++) {
         for (size_t j = 0; j < NPhi1Q; j++) {
             CQperpIntegral::GSLARGS args;
@@ -254,9 +276,10 @@ void Compute(const std::string& OutputFile, double p1 = 1.0, double cosTheta1 = 
     for (size_t i = 0; i < NqPerp; i++) {
         for (size_t j = 0; j < NPhi1Q; j++) {
             size_t idx = j + i * NPhi1Q;
-            file.print("{} {} {} {}\n", qPerpValues[i], Phi1QValues[j], 
+            file.print("{} {} {} {}\n", qPerpValues[i], Phi1QValues[j],
                        Results[idx], Errors[idx]);
         }
+
         file.print("\n"); // blank line for gnuplot
     }
 
