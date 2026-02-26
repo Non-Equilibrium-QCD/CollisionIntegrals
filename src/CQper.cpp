@@ -2,277 +2,273 @@
 
 #include <cmath>
 #include "constants.cpp"
+#include "ProcessTraits.hpp"
 #include <gsl/gsl_monte_vegas.h>
 #include <vector>
 #include "GSLVEGAS.cpp"
 #include <omp.h>
 #include <fmt/core.h>
+#include <fmt/os.h>
+#include <fmt/color.h>
 
-namespace Distribution {
-inline double fg(double p, double cosTheta, double phi) {
-    return 1.0 / (std::expm1(p));
-}
+namespace CQperpIntegral {
+constexpr size_t dimensions = 3; // p2, omega, phi2q
 
-inline double fq(double p, double cosTheta, double phi) {
-    return 1.0 / (std::exp(p) + 1.0);
-}
-}
-
-
-namespace MatrixElementsQCD {
-
-// SCREENING PARAMETER //
-static const double xi0g = std::exp(5.0 / 6.0) / (2.0 * M_SQRT2);
-static const double xi0q = std::exp(1.0) / M_SQRT2;
-
-// gg -> gg //
-inline double gg_gg(const double s, const double t,
-                    const double u, const double qt, const double qu, const double mDSqr,
-                    const double mQSqr) {
-
-    double tBar = t * (qt * qt + xi0g * xi0g * mDSqr) / (qt * qt);
-    double uBar = u * (qu * qu + xi0g * xi0g * mDSqr) / (qu * qu);
-
-    return 4.0 * g * g * g * g * dA * CA * CA * ();
-
-}
-}
-
-namespace StatisticalQCD {
-
-inline double Stat(double f2, double f4) {
-    return f2 * (1.0 + f4);
-}
-}
-
-
-namespace CollisionIntegralQCD {
-
+struct GSLARGS {
+    double qPerp;           // transverse momentum transfer
+    double Phi1Q;           // azimuthal angle of q relative to p1
+    double p1, cosTheta1, phi1; // particle 1 momentum
+    double (*fct)(double *, const GSLARGS &);
+};
 
 /**
- * @brief Computes the collision integral for 2->2 QCD processes using Monte Carlo integration.
- * @tparam StatFunc Function to compute the statistical factor.
-    *         @code
-    *         double StatFunc(double f1, double f2, double f3, double f4);
-    *         @endcode
- * @tparam MatrixElemFunc Function to compute the squared matrix element.
-    *         @code
-    *         double MatrixElemFunc(double s, double t, double u, double qt, double qu, double mDSqr, double mQSqr);
-    *         @endcode
- * @param x Array of random variables for sampling the integration variables.
- * @param args Struct containing additional parameters for the integration.
- * @return The value of the collision integral for the given parameters.
-*/
-template<auto StatFunc, auto MatrixElemFunc>
-inline double CollisionIntegral(double *x, const GSLARGS& args) {
+ * @brief Computes C(q_perp) for 2->2 processes using Monte Carlo integration.
+ * 
+ * This implements the integral from CqPerp.md:
+ * C(q_perp) = (1/(2pi)^2) * (1/q_perp^4) * integral[dw dp2 dphi2q] |M|^2 * F[f]
+ * 
+ * The integration variables are:
+ * - x[0]: maps to p2 in [(q-w)/2, infinity)
+ * - x[1]: maps to omega in (-infinity, +infinity) via tan transform
+ * - x[2]: maps to phi2q in [0, 2*pi)
+ * 
+ * @tparam ProcessTag Tag type identifying the process.
+ *         ProcessTraits<ProcessTag> must define:
+ *         - dist2, dist4: distribution functions for particles 2 and 4
+ *         - stat: statistical factor function F[f](f1, f2, f3, f4)
+ *         - matrix: matrix element function |M|^2(s, t, u, qt, qu, mDSqr, mQSqr)
+ * @param x Array of random variables for sampling.
+ * @param args Struct containing qPerp and p1 angular coordinates.
+ * @return The value of the integrand for C(q_perp).
+ */
+template<typename ProcessTag>
+inline double CQperpIntegrand(double *x, const GSLARGS& args) {
+    using Traits = ProcessTraits<ProcessTag>;
 
-    // GET p1 ANGULAR COORDINATES //
-    double qT = args.p1;
-    double cosTheta1 = args.cosTheta1; double Sin1 = sqrt(1.0 - cosTheta1 * cosTheta1);
+    double qPerp = args.qPerp;
+    (void)args.p1; // p1 -> infinity limit
+    double cosTheta1 = args.cosTheta1;
+    double Sin1 = std::sqrt(1.0 - cosTheta1 * cosTheta1);
     double phi1 = args.phi1;
 
     // SET BASIS VECTORS WRT p1 //
-    double ep1[3]; double ep2[3]; double ep3[3];
+    double ep1[3], ep2[3], ep3[3];
 
-    ep1[0] = Sin1 * cos(phi1);
-    ep1[1] = Sin1 * sin(phi1);
+    ep1[0] = Sin1 * std::cos(phi1);
+    ep1[1] = Sin1 * std::sin(phi1);
     ep1[2] = cosTheta1;
 
-    ep2[0] = cosTheta1 * cos(phi1);
-    ep2[1] = cosTheta1 * sin(phi1);
+    ep2[0] = cosTheta1 * std::cos(phi1);
+    ep2[1] = cosTheta1 * std::sin(phi1);
     ep2[2] = -Sin1;
 
-    ep3[0] = -sin(phi1);
-    ep3[1] = cos(phi1);
+    ep3[0] = -std::sin(phi1);
+    ep3[1] = std::cos(phi1);
     ep3[2] = 0.0;
 
-    // SAMPLE w from -oo to oo //
-    double w = std::tan(M_PI * (x[2] - 0.5));
-    double dw_dy = ;
+    // SAMPLE omega from -infinity to +infinity via tan transform //
+    // x[1] in (0,1) -> omega in (-inf, +inf)
+    double omega = std::tan(M_PI * (x[1] - 0.5));
+    double dOmega_dx = M_PI / (std::cos(M_PI * (x[1] - 0.5)) * std::cos(M_PI * (x[1] - 0.5)));
 
-    double q = std::sqrt(qT * qT + w * w);
+    // Compute q = sqrt(qPerp^2 + omega^2)
+    double q = std::sqrt(qPerp * qPerp + omega * omega);
 
-    // SAMPLE p2 //
-    double p2Min = 0.5 * (q - w);
-    double p2Max = 100.0;
-    double p2 = p2Min + (p2Max - p2Min) * x[0];
+    if (q < 1e-12) {
+        return 0.0;
+    }
 
-
-    // SAMPLE w //
-    double wMin = std::max(-q, q - 2.0 * p2);
-    double wMax = std::min(+q, 2.0 * p1 - q);
-    double w = wMin + (wMax - wMin) * x[2];
-
-    // SAMPLE Phi1q //
-    double Phi1Q = 2.0 * M_PI * x[3];
+    // SAMPLE p2 from (q - omega)/2 to infinity //
+    // Using transform: p2 = p2Min + y/(1-y) where y = x[0]
+    double p2Min = std::max(0.0, (q - omega) / 2.0);
+    
+    if (x[0] >= 1.0 - 1e-12) {
+        return 0.0;
+    }
+    
+    double y = x[0];
+    double p2 = p2Min + y / (1.0 - y);
+    double dp2_dy = 1.0 / ((1.0 - y) * (1.0 - y));
 
     // SAMPLE Phi2q //
-    double Phi2Q = 2.0 * M_PI * x[4];
+    double Phi2Q = 2.0 * M_PI * x[2];
+    double dPhi2Q = 2.0 * M_PI;
 
-    // GET Cos1Q AND Cos2Q FROM ENERGY CONSERVATION CONSTRAINTS //
-    double Cos1Q = -((p1 - w) * (p1 - w) - p1 * p1 - q * q) / (2.0 * p1 * q);
-    double Sin1Q = sqrt(1.0 - Cos1Q * Cos1Q);
-    double Cos2Q = +((p2 + w) * (p2 + w) - p2 * p2 - q * q) / (2.0 * p2 * q);
-    double Sin2Q = sqrt(1.0 - Cos2Q * Cos2Q);
+    // Compute Cos2Q from delta function constraint:
+    // cos(theta_2q) = omega/q + (omega^2 - q^2)/(2*p2*q)
+    //               = omega/q - qPerp^2/(2*p2*q)
+    double Cos2Q = omega / q - qPerp * qPerp / (2.0 * p2 * q);
 
-    // SET q VECTOR //
-    double qx = q * (Cos1Q * ep1[0] + Sin1Q * cos(Phi1Q) * ep2[0] + Sin1Q * sin(
-                         Phi1Q) * ep3[0]);
-    double qy = q * (Cos1Q * ep1[1] + Sin1Q * cos(Phi1Q) * ep2[1] + Sin1Q * sin(
-                         Phi1Q) * ep3[1]);
-    double qz = q * (Cos1Q * ep1[2] + Sin1Q * cos(Phi1Q) * ep2[2] + Sin1Q * sin(
-                         Phi1Q) * ep3[2]);
+    // Check if Cos2Q is in valid range [-1, 1]
+    if (std::abs(Cos2Q) > 1.0) {
+        return 0.0;
+    }
 
-    // DETERMINE ANGLES //
-    double CosQ = qz / q; double SinQ = sqrt(1.0 - CosQ * CosQ);
-    double PhiQ = atan2(qy, qx);
+    double Sin2Q = std::sqrt(1.0 - Cos2Q * Cos2Q);
+
+    // Compute Cos1Q = omega/q (angle between p1 and q)
+    double Cos1Q = omega / q;
+    double Sin1Q = std::sqrt(1.0 - Cos1Q * Cos1Q);
+
+    // Azimuthal angle of q relative to p1 (from args)
+    double Phi1Q = args.Phi1Q;
+
+    // SET q VECTOR using basis vectors wrt p1 //
+    double qx = q * (Cos1Q * ep1[0] + Sin1Q * std::cos(Phi1Q) * ep2[0] + Sin1Q * std::sin(Phi1Q) * ep3[0]);
+    double qy = q * (Cos1Q * ep1[1] + Sin1Q * std::cos(Phi1Q) * ep2[1] + Sin1Q * std::sin(Phi1Q) * ep3[1]);
+    double qz = q * (Cos1Q * ep1[2] + Sin1Q * std::cos(Phi1Q) * ep2[2] + Sin1Q * std::sin(Phi1Q) * ep3[2]);
+
+    // DETERMINE ANGLES of q vector //
+    double CosQ = qz / q;
+    double SinQ = std::sqrt(1.0 - CosQ * CosQ);
+    double PhiQ = std::atan2(qy, qx);
 
     // SET BASIS VECTORS WRT q //
-    double eq1[3]; double eq2[3]; double eq3[3];
+    double eq1[3], eq2[3], eq3[3];
 
-    eq1[0] = SinQ * cos(PhiQ);
-    eq1[1] = SinQ * sin(PhiQ);
+    eq1[0] = SinQ * std::cos(PhiQ);
+    eq1[1] = SinQ * std::sin(PhiQ);
     eq1[2] = CosQ;
 
-    eq2[0] = CosQ * cos(PhiQ);
-    eq2[1] = CosQ * sin(PhiQ);
+    eq2[0] = CosQ * std::cos(PhiQ);
+    eq2[1] = CosQ * std::sin(PhiQ);
     eq2[2] = -SinQ;
 
-    eq3[0] = -sin(PhiQ);
-    eq3[1] = cos(PhiQ);
+    eq3[0] = -std::sin(PhiQ);
+    eq3[1] = std::cos(PhiQ);
     eq3[2] = 0.0;
 
     // SET p2 VECTOR //
-    double p2x = p2 * (Cos2Q * eq1[0] + Sin2Q * cos(Phi2Q) * eq2[0] + Sin2Q * sin(
-                           Phi2Q) * eq3[0]);
-    double p2y = p2 * (Cos2Q * eq1[1] + Sin2Q * cos(Phi2Q) * eq2[1] + Sin2Q * sin(
-                           Phi2Q) * eq3[1]);
-    double p2z = p2 * (Cos2Q * eq1[2] + Sin2Q * cos(Phi2Q) * eq2[2] + Sin2Q * sin(
-                           Phi2Q) * eq3[2]);
+    double p2x = p2 * (Cos2Q * eq1[0] + Sin2Q * std::cos(Phi2Q) * eq2[0] + Sin2Q * std::sin(Phi2Q) * eq3[0]);
+    double p2y = p2 * (Cos2Q * eq1[1] + Sin2Q * std::cos(Phi2Q) * eq2[1] + Sin2Q * std::sin(Phi2Q) * eq3[1]);
+    double p2z = p2 * (Cos2Q * eq1[2] + Sin2Q * std::cos(Phi2Q) * eq2[2] + Sin2Q * std::sin(Phi2Q) * eq3[2]);
 
-    // SET p4 VECTOR //
+    // SET p4 VECTOR = p2 + q //
     double p4x = p2x + qx;
     double p4y = p2y + qy;
     double p4z = p2z + qz;
+    double p4 = std::sqrt(p4x * p4x + p4y * p4y + p4z * p4z);
 
-    double p4 = sqrt(p4x * p4x + p4y * p4y + p4z * p4z);
+    // Compute p2_parallel = p2 . e^1_p1 (projection along p1 direction)
+    double p2Parallel = p2x * ep1[0] + p2y * ep1[1] + p2z * ep1[2];
 
-    // GET MANDELSTAM VARIABLES //
-    double t = w * w - q * q;
+    // Compute Mandelstam variables in p1 -> infinity limit
+    double s = 2.0 * (p2 - p2Parallel);
+    double t = omega * omega - q * q; // = -qPerp^2
 
-    // SET qt AND qu //
-    double q13 = q;
+    // Momentum transfers
+    double qt = q;  // |p1 - p3| = |q|
 
-    // SET JACOBIAN //
-    double Jacobian = (2.0 * M_PI) * (2.0 * M_PI) * (p2Max - p2Min) *
-                      (qMax - qMin) * (wMax - wMin) * (q * q) * (p2 * p2) * (p3 / (p1 * q)) * (p4 /
-                          (p2 * q));
+    // Matrix element from ProcessTraits
+    // Signature: matrix(s, t, u, qt, qu, mDSqr, mQSqr)
+    double matrixFactor = Traits::matrix(s, t, qt, mDSqr, mQSqr);
 
+    // Get distribution functions for p2 and p4
     double cosTheta2 = p2z / p2;
-    double phi2 = atan2(p2y, p2x);
+    double phi2 = std::atan2(p2y, p2x);
     double cosTheta4 = p4z / p4;
-    double phi4 = atan2(p4y, p4x);
+    double phi4 = std::atan2(p4y, p4x);
 
-    double f2g = Distribution::fg(p2, cosTheta2, phi2);
-    double f4g = Distribution::fg(p4, cosTheta4, phi4);
+    double f2g = Traits::dist2(p2, cosTheta2, phi2);
+    double f4g = Traits::dist4(p4, cosTheta4, phi4);
 
-    double f2q = Distribution::fg(p2, cosTheta2, phi2);
-    double f4q = Distribution::fg(p4, cosTheta4, phi4);
+    // Statistical factor from ProcessTraits
+    // We pass (0, f2, 0, f4) since f1 and f3 are not used in C(q_perp)
+    double statFactor = Traits::stat(0.0, f2g, 0.0, f4g);
 
-    double s1 = CA * f2g * (1.0 + f4g)
-                + CF * f2q * (1.0 - f4q); 
-    double M1 = MatrixElemFunc(s, t, u, q13, q23, mDSqr,
-                mQSqr);
+    // Jacobian from delta function: |dp4/dcos(theta_2q)| = p2*q / p4
+    double deltaJacobian = p4 / (p2 * q);
 
-    double j  = Jacobian / (16.0 * p1 * p1 * p2 * p2 * q13 * q13);
-    double c  = 1.0 / std::pow(2.0 * M_PI, 9);
+    // Full Jacobian
+    double Jacobian = dOmega_dx * dp2_dy * dPhi2Q * deltaJacobian;
 
-    if (std::abs(u) < 1e-12 || std::abs(t) < 1e-12) {
+    double result = Jacobian * matrixFactor * statFactor;
+
+    if (!std::isfinite(result)) {
         return 0.0;
     }
 
-    if (!std::isfinite(s1) || !std::isfinite(M1) || !std::isfinite(j)
-            || !std::isfinite(c)) {
-        fmt::println(stderr, "NaN encountered in integrand:"
-                             " s1={}, M1={}, j={}, c={}",
-                     s1, M1, j, c);
-        return 0.0;
-    }
-
-    return j * c * s1 * M1;
+    return result;
 }
 
-}
+} // namespace CQperpIntegral
 
-namespace IntegrateQCD {
+namespace IntegrateCQperp {
 
 std::vector<GSLVEGAS> vegasIntegrators;
 
-void Compute(double (*Integrand)(double *, const GSLARGS&)) {
+/**
+ * @brief Compute C(q_perp, Phi1Q) for a range of q_perp and Phi1Q values.
+ * 
+ * @tparam ProcessTag Tag type identifying the process.
+ * @param OutputFile Output file path.
+ * @param p1 Momentum of particle 1 (default: 1.0).
+ * @param cosTheta1 Angle of particle 1 (default: 1.0, i.e., along z-axis).
+ */
+template<typename ProcessTag>
+void Compute(const std::string& OutputFile, double p1 = 1.0, double cosTheta1 = 1.0, double phi1 = 0.0) {
+    auto Integrand = CQperpIntegral::CQperpIntegrand<ProcessTag>;
 
-    size_t Np = 64;
-    size_t Ncos = 16;
-    double pMin = 1e-1;
-    double pMax = 4.0;
-    #pragma omp parallel for ordered
+    size_t NqPerp = 64;
+    size_t NPhi1Q = 16;
+    double qPerpMin = 1e-2;
+    double qPerpMax = 16.0;
 
-    for (size_t j = 0; j < Ncos; j++) {
-        std::vector<double> Results(Np, 0.0), Errors(Np, 0.0), pValues(Np, 0.0);
-        GSLARGS args;
-        // args.cosTheta1 = 0.0;
-        args.cosTheta1 = -1.0 + 2.0 * j / (Ncos - 1);
-        args.phi1 = 0.0;
-        args.fct = Integrand;
-        size_t tID = omp_get_thread_num();
+    std::vector<double> qPerpValues(NqPerp);
+    std::vector<double> Phi1QValues(NPhi1Q);
+    std::vector<double> Results(NqPerp * NPhi1Q), Errors(NqPerp * NPhi1Q);
 
-        for (size_t i = 0; i < Np; i++) {
-            // args.p1 = pMin * std::exp(std::log(pMax / pMin) * i / (Np - 1));
-            args.p1 = pMin + (pMax - pMin) * i / (Np - 1);
+    for (size_t i = 0; i < NqPerp; i++) {
+        qPerpValues[i] = qPerpMin * std::exp(std::log(qPerpMax / qPerpMin) * i / (NqPerp - 1));
+    }
 
+    for (size_t j = 0; j < NPhi1Q; j++) {
+        Phi1QValues[j] = 2.0 * M_PI * j / NPhi1Q;
+    }
+
+    #pragma omp parallel for collapse(2)
+    for (size_t i = 0; i < NqPerp; i++) {
+        for (size_t j = 0; j < NPhi1Q; j++) {
+            CQperpIntegral::GSLARGS args;
+            args.qPerp = qPerpValues[i];
+            args.Phi1Q = Phi1QValues[j];
+            args.p1 = p1;
+            args.cosTheta1 = cosTheta1;
+            args.phi1 = phi1;
+            args.fct = Integrand;
+
+            size_t tID = omp_get_thread_num();
             double result, error;
-            vegasIntegrators[tID].integrate(args, 10000, &result, &error);
+            vegasIntegrators[tID].integrate(args, 1e6, &result, &error);
 
-            Results[i] = result;
-            Errors[i] = error;
-            pValues[i] = args.p1;
-        }
-
-        #pragma omp critical
-        {
-            fmt::println(stderr, "Thread {:2} completed ",
-                         fmt::styled(tID, fmt::emphasis::bold | fmt::color::green));
-        }
-
-        #pragma omp ordered
-        {
-            for (size_t i = 0; i < Np; i++) {
-                fmt::println("{} {} {} {} {}", pValues[i], args.cosTheta1,
-                             Distribution::fg(pValues[i], args.cosTheta1, 0.0),
-                             Results[i], Errors[i]);
-            }
-
-            fmt::println("");
+            size_t idx = j + i * NPhi1Q;
+            Results[idx] = result;
+            Errors[idx] = error;
         }
     }
 
+    // OUTPUT RESULTS //
+    auto file = fmt::output_file(OutputFile);
+    file.print("# q_perp  Phi1Q  C(q_perp,Phi1Q)  Error\n");
+
+    for (size_t i = 0; i < NqPerp; i++) {
+        for (size_t j = 0; j < NPhi1Q; j++) {
+            size_t idx = j + i * NPhi1Q;
+            file.print("{} {} {} {}\n", qPerpValues[i], Phi1QValues[j], 
+                       Results[idx], Errors[idx]);
+        }
+        file.print("\n"); // blank line for gnuplot
+    }
+
+    fmt::println(stderr, "Results written to {}", OutputFile);
 }
 
-
 void Setup() {
-    // Disable Cuba's internal parallelization (forking) since we use OpenMP
-
     vegasIntegrators.reserve(omp_get_max_threads());
 
     for (int i = 0; i < omp_get_max_threads(); i++) {
-        vegasIntegrators.push_back(GSLVEGAS(5));
+        vegasIntegrators.push_back(GSLVEGAS(CQperpIntegral::dimensions));
     }
 }
 
-}
-
-
-// int main (int argc, const char *argv[]) {
-//     IntegrateQCD::Setup();
-//     IntegrateQCD::Compute();
-//     return 0;
-// }
+} // namespace IntegrateCQperp

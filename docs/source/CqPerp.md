@@ -13,17 +13,12 @@ C[f_1] = & \frac{1}{2\nu_1} \int \frac{d^3p_2}{(2\pi)^3}
 |\mathcal{M}|^2 \, \mathcal{F}[f]\;.
 ```
 
-Here the matrix element and statistical factors are simply 
+Here we keep the matrix element $|\mathcal{M}|^2$ and statistical factor $\mathcal{F}[f]$ general. 
+The statistical factor depends on the distribution functions:
 ```{math}
 :label:
-\frac{1}{2\nu_1}|\mathcal{M}|^2 &= 4 g^4 \frac{{\left(p_1 p_2 - \vec{p}_1 \cdot \vec{p}_2\right)}^2}{{\left(q^2 - \omega^2\right)}^2} \;,\\
-\mathcal{F}[f] &= 
-C_A f_g(\vec{p}_2) (1 + f_g(\vec{p}_2 + \vec{q}))
-+ \frac{N_f}{2} f_q(\vec{p}_2) (1 - f_q(\vec{p}_2 + \vec{q}))
-+ \frac{N_f}{2} f_{\bar{q}}(\vec{p}_2) (1 - f_{\bar{q}}(\vec{p}_2 + \vec{q}))
-\;.
+\mathcal{F}[f] = \mathcal{F}[f](\vec{p}_2, \vec{p}_2 + \vec{q})\;.
 ```
-We have re-arranged the color factors into the statistical factor and stripped the $C(q_\perp)$ of the Casimir factor $C_R$.
 
 We now expand the first delta function for $\frac{q}{p_1} \to 0$
 ```{math}
@@ -55,32 +50,37 @@ Defining the $C(q_\perp)$
 :label:
 C(q_\perp) = \frac{1}{{(2\pi)}^2} \frac{d\Gamma}{d^2 q_\perp}\;,
 ```
-we obtain the expression
+we obtain the general expression
 ```{math}
-:label:
-C(q_\perp) = & \frac{1}{(2\pi)^2} \frac{1}{q_\perp^4}
+:label: eq-cqperp-general
+C(q_\perp) = & \frac{1}{(2\pi)^2}
 \int^{\infty}_{-\infty} \frac{d\omega}{2\pi} \,
-\int^\infty_{\frac{q-\omega}{2}} dp_2
-d\cos\theta_{2q} d\phi_{2q}
-\frac{4 g^4 {\left(p_1 p_2 - \vec{p}_1 \cdot \vec{p}_2\right)}^2p_2^2}{16p_1 (p_1 - \omega) p_2^2 q}
+\int^\infty_{\frac{q-\omega}{2}} dp_2 \, p_2^2
+\int d\cos\theta_{2q} \, d\phi_{2q}
 \\
 & \times
+\frac{|\mathcal{M}|^2}{16 p_1 (p_1 - \omega) q}
 (2\pi) \delta\left(\cos\theta_{2q} - \left(\frac{\omega}{q} + \frac{\omega^2 - q^2}{2 p_2 q}\right)\right) \,
 \mathcal{F}[f]\;.
 ```
-We replace $p_1 - \omega \approx p_1$ and simplify the expression to
+
+Replacing $p_1 - \omega \approx p_1$ in the small-$q$ limit, the expression simplifies to:
 ```{math}
-:label:
-C(q_\perp) = & \frac{1}{(2\pi)^2} \frac{1}{q_\perp^4}
+:label: eq-cqperp-simplified
+C(q_\perp) = & \frac{1}{(2\pi)^2}
 \int^{\infty}_{-\infty} \frac{d\omega}{2\pi} \,
-\int^\infty_{\frac{q-\omega}{2}} dp_2
-d\cos\theta_{2q} d\phi_{2q}
-\frac{g^4 {\left(p_2 - p_{2\parallel}\right)}^2}{4q}
+\int^\infty_{\frac{q-\omega}{2}} dp_2 \, p_2^2
+\int d\cos\theta_{2q} \, d\phi_{2q}
 \\
 & \times
+\frac{|\mathcal{M}|^2}{16 p_1^2 q}
 (2\pi) \delta\left(\cos\theta_{2q} - \left(\frac{\omega}{q} + \frac{\omega^2 - q^2}{2 p_2 q}\right)\right) \,
 \mathcal{F}[f]\;.
 ```
+
+The matrix element $|\mathcal{M}|^2$ can depend on the kinematic variables $p_2$, $p_{2\parallel}$, $\omega$, $q_\perp$, and $q$.
+
+## Basis Vectors
 
 Similarly to {eq}`eq-basis-vectors-p1`, we introduce basis vectors for $\vec{q}$:
 ```{math}
@@ -124,3 +124,38 @@ The projection of $\vec{p}_2$ along $\vec{p}_1$ is simply
 p_{2\parallel} = (\vec{p}_2 \cdot \vec{e}^{\, 1}_{p_1})\;.
 ```
 
+## Leading-Log Matrix Element
+
+In the leading-log approximation for QCD, the matrix element takes the form:
+```{math}
+:label: eq-matrix-leading-log
+|\mathcal{M}|^2_{\text{LL}} = 4 g^4 \frac{{\left(p_1 p_2 - \vec{p}_1 \cdot \vec{p}_2\right)}^2}{{\left(q^2 - \omega^2\right)}^2} 
+= 4 g^4 \frac{{\left(p_2 - p_{2\parallel}\right)}^2}{q_\perp^4}\;,
+```
+where we used $p_1 p_2 - \vec{p}_1 \cdot \vec{p}_2 = p_1(p_2 - p_{2\parallel})$ and $q^2 - \omega^2 = q_\perp^2$.
+
+For the statistical factor in QCD with gluons and quarks:
+```{math}
+:label: eq-stat-qcd
+\mathcal{F}[f] = 
+C_A f_g(\vec{p}_2) (1 + f_g(\vec{p}_2 + \vec{q}))
++ \frac{N_f}{2} f_q(\vec{p}_2) (1 - f_q(\vec{p}_2 + \vec{q}))
++ \frac{N_f}{2} f_{\bar{q}}(\vec{p}_2) (1 - f_{\bar{q}}(\vec{p}_2 + \vec{q}))
+\;.
+```
+
+Substituting the leading-log matrix element into {eq}`eq-cqperp-simplified`:
+```{math}
+:label: eq-cqperp-leading-log
+C(q_\perp)_{\text{LL}} = & \frac{1}{(2\pi)^2} \frac{1}{q_\perp^4}
+\int^{\infty}_{-\infty} \frac{d\omega}{2\pi} \,
+\int^\infty_{\frac{q-\omega}{2}} dp_2 \, p_2^2
+\int d\cos\theta_{2q} \, d\phi_{2q}
+\\
+& \times
+\frac{g^4 {\left(p_2 - p_{2\parallel}\right)}^2}{4 q}
+(2\pi) \delta\left(\cos\theta_{2q} - \left(\frac{\omega}{q} + \frac{\omega^2 - q^2}{2 p_2 q}\right)\right) \,
+\mathcal{F}[f]\;.
+```
+
+Note that we have re-arranged the color factors into the statistical factor $\mathcal{F}[f]$ and stripped $C(q_\perp)$ of the Casimir factor $C_R$.
