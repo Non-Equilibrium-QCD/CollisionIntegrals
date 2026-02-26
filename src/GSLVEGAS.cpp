@@ -56,16 +56,29 @@ public:
         f.dim = dimension;
         f.params = const_cast<ARGTYPE *>(&args);
         auto vs = gsl_monte_vegas_alloc(dimension);
+        
+        // Warm-up phase
+        size_t warmup_calls = calls / 10;
+        if (warmup_calls < 10000) warmup_calls = 10000;
+        
+        for (size_t i = 0; i < 5; ++i) {
+            gsl_monte_vegas_integrate(&f, xl.data(), xu.data(), dimension, warmup_calls, rng,
+                                      vs, result, error);
+        }
+        
+        // Main integration phase
         gsl_monte_vegas_integrate(&f, xl.data(), xu.data(), dimension, calls, rng,
                                   vs, result, error);
+                                  
         size_t iteration = 0;
-
-        while (std::fabs(gsl_monte_vegas_chisq(vs) - 1.0) > 0.5 and
-                iteration < 20) {
-            gsl_monte_vegas_integrate(&f, xl.data(), xu.data(), dimension, calls / 5, rng,
+        while (std::fabs(gsl_monte_vegas_chisq(vs) - 1.0) > 0.5 &&
+                iteration < 10) {
+            gsl_monte_vegas_integrate(&f, xl.data(), xu.data(), dimension, calls, rng,
                                       vs, result, error);
             iteration++;
         }
+        
+        gsl_monte_vegas_free(vs);
     }
 
     ~GSLVEGAS() {

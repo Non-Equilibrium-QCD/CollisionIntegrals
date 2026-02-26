@@ -10,7 +10,7 @@
 #include <fmt/core.h>
 #include <fmt/os.h>
 #include <fmt/color.h>
-#define CQPERP_LINEAR_P2 // Uncomment to use linear sampling for p2 instead of transform sampling
+// #define CQPERP_LINEAR_P2 // Uncomment to use linear sampling for p2 instead of transform sampling
 
 namespace CQperpIntegral {
 constexpr size_t dimensions = 3; // p2, omega, phi2q
@@ -178,7 +178,7 @@ inline double CQperpIntegrand(double *x, const GSLARGS& args) {
 
     // Matrix element from ProcessTraits
     // Signature: matrix(s, t, u, qt, qu, mDSqr, mQSqr)
-    double c1 = 2 * (2 * p2 - omega);
+    double c1 = 2 * (2 * p2 + omega);
     double c2 = 4 * p2 * Sin1Q * Sin2Q * std::cos(Phi1Q - Phi2Q);
     double matrixFactor = Traits::matrix(s, t, omega, qt, mDSqr, mQSqr, c1, c2);
 
@@ -195,8 +195,8 @@ inline double CQperpIntegrand(double *x, const GSLARGS& args) {
     // We pass (0, f2, 0, f4) since f1 and f3 are not used in C(q_perp)
     double statFactor = Traits::stat(0.0, f2g, 0.0, f4g);
 
-    // Jacobian from delta function: |dp4/dcos(theta_2q)| = p2*q / p4
-    double deltaJacobian = p4 / (p2 * q);
+    // Jacobian from delta function:
+    double deltaJacobian = 1.0 / (16.0 * p2 * q);
 
     // Full Jacobian
     double Jacobian = dOmega_dx * dp2_dx * dPhi2Q * deltaJacobian;
@@ -230,8 +230,8 @@ void Compute(const std::string& OutputFile, double p1 = 1.0,
     auto Integrand = CQperpIntegral::CQperpIntegrand<ProcessTag>;
 
     size_t NqPerp = 64;
-    size_t NPhi1Q = 16;
-    double qPerpMin = 1e-2;
+    size_t NPhi1Q = 32;
+    double qPerpMin = 1e-4;
     double qPerpMax = 16.0;
 
     std::vector<double> qPerpValues(NqPerp);
@@ -244,7 +244,7 @@ void Compute(const std::string& OutputFile, double p1 = 1.0,
     }
 
     for (size_t j = 0; j < NPhi1Q; j++) {
-        Phi1QValues[j] = 2.0 * M_PI * j / NPhi1Q;
+        Phi1QValues[j] = M_PI_2 * j / NPhi1Q;
     }
 
     #pragma omp parallel for collapse(2)
@@ -261,7 +261,7 @@ void Compute(const std::string& OutputFile, double p1 = 1.0,
 
             size_t tID = omp_get_thread_num();
             double result, error;
-            vegasIntegrators[tID].integrate(args, 1e6, &result, &error);
+            vegasIntegrators[tID].integrate(args, 1e5, &result, &error);
 
             size_t idx = j + i * NPhi1Q;
             Results[idx] = result;

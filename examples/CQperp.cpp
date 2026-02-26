@@ -96,22 +96,22 @@ inline double HTL(double s, double t, double w,
                   double q,
                   double mDSqr, double mQSqr, double c1, double c2) {
     (void)s;
-    (void)t;
     (void)mQSqr;
-    double AHTL = q * q
-                  + mDSqr * (1 + (w / (2 * q)) *
-                             std::log((q - w) / (q + w)));
-    double BHTL = - (mDSqr * w / (2 * q)) * M_PI;
-    double CHTL = q * q - w * w + (mDSqr / 2) *
-                  ((w * w / q * q) + ((w * w / q * q) - 1)
-                   * (w / (2 * q)) * std::log((q - w) / (q + w)));
-    double DHTL = (M_PI * mDSqr * w / (4 * q)) * (1 - (w * w / q * q));
 
-    return c1 * c1 / (AHTL * AHTL + BHTL * BHTL) + c2 * c2 /
-           (CHTL * CHTL + DHTL * DHTL) -
-           (2 * c1 * c2 * (AHTL * CHTL + BHTL * DHTL)) / ((AHTL * AHTL + BHTL * BHTL) *
-                   (CHTL * CHTL + DHTL * DHTL));
+    double log_term = std::log((q+w) / (q-w));
 
+    double x = w / q;
+    double AHTL = q * q + mDSqr * (1.0 + 0.5 * x * log_term);
+    double BHTL = - mDSqr * 0.5 * x * M_PI;
+    double CHTL = q * q - w * w + mDSqr *
+                  ( x * x + 0.25 * x * (1.0 - x * x) * log_term );
+    double DHTL = mDSqr * 0.25 * x * (1.0 - x * x) * M_PI;
+
+    double den1 = AHTL * AHTL + BHTL * BHTL;
+    double den2 = CHTL * CHTL + DHTL * DHTL;
+
+    return c1 * c1 / den1 + c2 * c2 / den2 -
+           (2.0 * c1 * c2 * (AHTL * CHTL + BHTL * DHTL)) / (den1 * den2);
 }
 
 } // namespace MatrixElementCQperp
