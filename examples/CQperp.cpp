@@ -80,7 +80,6 @@ inline double LeadingLog(double s, double t, double w,
     (void)c1;
     (void)c2;
     double tBar = t * (qt * qt + xi0g * xi0g * mDSqr) / (qt * qt);
-    // s = 2*(p2 - p2_parallel), so s^2/4 = (p2 - p2_parallel)^2
     return 4.0 * g * g * g * g * dA * CA * CA * (
                s * s / (4.0 * tBar * tBar)
            );
@@ -188,8 +187,8 @@ struct ProcessTraits<CQperp_anisotropic_LL> {
     static constexpr auto dist3 = DistributionCQperp::fGInit;
     static constexpr auto dist4 = DistributionCQperp::fGInit;
     static constexpr auto stat  = StatisticalCQperp::BoseEnhancement;
-    // static constexpr auto matrix = MatrixElementCQperp::LeadingLog;
-    static constexpr auto matrix = MatrixElementCQperp::HTL;
+    static constexpr auto matrix = MatrixElementCQperp::LeadingLog;
+    // static constexpr auto matrix = MatrixElementCQperp::HTL;
     static constexpr double nuA = nuG;
 };
 

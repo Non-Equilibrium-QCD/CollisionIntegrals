@@ -41,7 +41,7 @@ For the second delta function we use the same treatment as in {eq}`eq-jacobians`
 ```{math}
 :label:
 \delta(p_2 + \omega - |\vec{p}_2 + \vec{q}|)
- &= \frac{|\vec{p}_2 + \vec{q}|}{p_2 q} \,
+ = \frac{|\vec{p}_2 + \vec{q}|}{p_2 q} \,
   \delta\left(\cos\theta_{2q} - \left(\frac{\omega}{q} + \frac{\omega^2 - q^2}{2 p_2 q}\right)\right)
   \Theta\left(p_2 - \frac{q - \omega}{2}\right)\;,
 ```
@@ -59,7 +59,7 @@ C(q_\perp) = & \frac{1}{(2\pi)^2}
 \int d\cos\theta_{2q} \, d\phi_{2q}
 \\
 & \times
-\frac{|\mathcal{M}|^2}{16 p_1 (p_1 - \omega) q}
+\frac{|\mathcal{M}|^2}{16 p_1 (p_1 - \omega) p_2^2 q}
 (2\pi) \delta\left(\cos\theta_{2q} - \left(\frac{\omega}{q} + \frac{\omega^2 - q^2}{2 p_2 q}\right)\right) \,
 \mathcal{F}[f]\;.
 ```
@@ -69,7 +69,7 @@ Replacing $p_1 - \omega \approx p_1$ in the small-$q$ limit, the expression simp
 :label: eq-cqperp-simplified
 C(q_\perp) = & \frac{1}{(2\pi)^2}
 \int^{\infty}_{-\infty} \frac{d\omega}{2\pi} \,
-\int^\infty_{\frac{q-\omega}{2}} dp_2 \, p_2^2
+\int^\infty_{\frac{q-\omega}{2}} dp_2 \,
 \int d\cos\theta_{2q} \, d\phi_{2q}
 \\
 & \times
@@ -149,7 +149,7 @@ Substituting the leading-log matrix element into {eq}`eq-cqperp-simplified`:
 :label: eq-cqperp-leading-log
 C(q_\perp)_{\text{LL}} = & \frac{1}{(2\pi)^2} \frac{1}{q_\perp^4}
 \int^{\infty}_{-\infty} \frac{d\omega}{2\pi} \,
-\int^\infty_{\frac{q-\omega}{2}} dp_2 \, p_2^2
+\int^\infty_{\frac{q-\omega}{2}} dp_2 \,
 \int d\cos\theta_{2q} \, d\phi_{2q}
 \\
 & \times
